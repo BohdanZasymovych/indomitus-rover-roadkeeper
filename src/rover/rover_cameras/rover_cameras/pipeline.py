@@ -77,7 +77,8 @@ def _ros_branch(fourcc, encoding, width, height):
 
 
 def build(device, fourcc, width, height, fps, *, quality=60, save_quality=95,
-          jpeg_encoder='jpegenc', ros_encoding='rgb8', ros_width=0, ros_height=0):
+          jpeg_encoder='jpegenc', ros_encoding='rgb8', ros_width=0, ros_height=0,
+          rotate_180=False):
     """The gst-launch string for one camera; see the module docstring."""
     if fourcc != 'MJPG' and fourcc not in RAW_FORMATS:
         raise ValueError('unsupported format %r (have MJPG, %s)'
@@ -85,9 +86,16 @@ def build(device, fourcc, width, height, fps, *, quality=60, save_quality=95,
     if ros_encoding not in ROS_ENCODINGS:
         raise ValueError('unsupported ros_encoding %r (have %s)'
                          % (ros_encoding, ', '.join(ROS_ENCODINGS)))
+    source = _source(device, fourcc, width, height, fps)
+    # A camera mounted upside down. MJPG has to be decoded to be turned, and
+    # the branches then see raw frames and encode them like a YUYV camera's.
+    branch_fourcc = fourcc
+    if rotate_180:
+        source += '%s ! videoflip method=rotate-180' % (' ! jpegdec' if fourcc == 'MJPG' else '')
+        branch_fourcc = 'RAW'
     return ' '.join([
-        _source(device, fourcc, width, height, fps), '! tee name=t',
-        _jpeg_branch('stream', fourcc, jpeg_encoder, quality),
-        _jpeg_branch('save', fourcc, jpeg_encoder, save_quality),
-        _ros_branch(fourcc, ros_encoding, ros_width, ros_height),
+        source, '! tee name=t',
+        _jpeg_branch('stream', branch_fourcc, jpeg_encoder, quality),
+        _jpeg_branch('save', branch_fourcc, jpeg_encoder, save_quality),
+        _ros_branch(branch_fourcc, ros_encoding, ros_width, ros_height),
     ])

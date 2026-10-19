@@ -71,6 +71,7 @@ class CameraNode(Node):
         self.ros_w = p('ros_width', 0).value
         self.ros_h = p('ros_height', 0).value
         self.ros_encoding = p('ros_encoding', 'rgb8').value
+        self.rotate_180 = bool(p('rotate_180', False).value)
         self.frame_id = p('frame_id', 'camera_optical_frame').value
         self.camera_info_file = p('camera_info_file', '').value
         port = p('port', 0).value
@@ -163,7 +164,8 @@ class CameraNode(Node):
         desc = pipeline.build(
             self.device, self.fourcc, w, h, fps, quality=self.quality,
             save_quality=self.save_quality, jpeg_encoder=self.jpeg_encoder,
-            ros_encoding=self.ros_encoding, ros_width=self.ros_w, ros_height=self.ros_h)
+            ros_encoding=self.ros_encoding, ros_width=self.ros_w, ros_height=self.ros_h,
+            rotate_180=self.rotate_180)
         try:
             pipe = Gst.parse_launch(desc)
         except GLib.Error as exc:
@@ -274,9 +276,10 @@ class CameraNode(Node):
             return Gst.FlowReturn.OK
         buf = sample.get_buffer()
         if self._video_info is None:
-            self._video_info = GstVideo.VideoInfo.new_from_caps(sample.get_caps())
-            self._info_msg = self._camera_info(self._video_info.width,
-                                               self._video_info.height)
+            # camera_info first: if it raises, the next frame retries.
+            vi = GstVideo.VideoInfo.new_from_caps(sample.get_caps())
+            self._info_msg = self._camera_info(vi.width, vi.height)
+            self._video_info = vi
         vi = self._video_info
 
         if buf.pts != Gst.CLOCK_TIME_NONE:

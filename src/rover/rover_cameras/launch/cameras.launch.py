@@ -26,7 +26,7 @@ from launch_ros.actions import Node, PushRosNamespace
 
 # cameras.yaml keys passed to the node as parameters of the same name.
 PASSTHROUGH = ('device', 'format', 'fps', 'port', 'quality', 'save_quality',
-               'jpeg_encoder', 'ros_fps', 'ros_encoding', 'save_dir')
+               'jpeg_encoder', 'ros_fps', 'ros_encoding', 'save_dir', 'rotate_180')
 
 
 def _size(value, key, name):

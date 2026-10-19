@@ -9,6 +9,7 @@ defaults:
   ros_res: ''
   ros_encoding: rgb8
   save_dir: ~/dataset
+  rotate_180: false   # true for a camera mounted upside down
 
 cameras:
   # Arducam B0495, YUYV only:
@@ -21,6 +22,7 @@ cameras:
   arducam-front-bottom:
     device: /dev/arducam-front-bottom
     port: 8093   # http://10.42.0.1:8093/arducam-front-bottom?action=stream
+    rotate_180: true
 
   # Arducam B0495, YUYV only:
   #   USB 3.0: 1920x1200 @50/30/15, 960x600 @80/60/30/15
