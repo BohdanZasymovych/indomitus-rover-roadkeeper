@@ -15,7 +15,7 @@
   <exec_depend>indomitus_interfaces</exec_depend>
 
   <!-- rover -->
-  <exec_depend>rover_aruco</exec_depend>
+  <!-- <exec_depend>rover_aruco</exec_depend> -->   <!-- Temporary ignored -->
   <exec_depend>rover_bringup</exec_depend>
   <exec_depend>rover_cameras</exec_depend>
   <exec_depend>rover_comms</exec_depend>
@@ -44,6 +44,9 @@
   <exec_depend>panel_bringup</exec_depend>
   <exec_depend>panel_description</exec_depend>
   <exec_depend>panel_perception</exec_depend>
+
+  <!-- Recording ROS 2 bags in MCAP format -->
+  <exec_depend>rosbag2_storage_mcap</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
