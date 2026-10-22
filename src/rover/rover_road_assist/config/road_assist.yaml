@@ -5,6 +5,11 @@
     warn: false                 # while assist is off, report WARN instead of OFF
     status_rate: 5.0            # [Hz] how often road_assist/status is re-checked
 
+    # The operator's laptop teleop publishes cmd_vel_in; cmd_vel_out is its
+    # twist_mux input, and this node must be the only publisher there.
+    cmd_vel_in: cmd_vel_remote_raw    # rover_teleop: gamepad.launch.py, keyboard.yaml
+    cmd_vel_out: cmd_vel_remote       # rover_drive/config/twist_mux.yaml
+
     # --- Steering law (steering_law.SteeringParams) ---
     road_width: 3.0             # [m] RoadDeviation's offset is a fraction of half of this
     k_e: 0.3                    # [1/s] offset -> approach angle

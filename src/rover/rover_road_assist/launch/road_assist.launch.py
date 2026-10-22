@@ -3,8 +3,9 @@ Road assist: the filter between the operator's command and twist_mux.
 
     cmd_vel_remote_raw + road/state -> road_assist_node -> cmd_vel_remote
 
-It has to be the only publisher on cmd_vel_remote, so the operator's teleop
-must publish to cmd_vel_remote_raw while this runs.
+Both topic names are set in config/road_assist.yaml. The laptop teleop
+publishes cmd_vel_remote_raw, so without this node it cannot drive: both
+rover.launch.py and sim_gz.launch.py start it.
 
     ros2 launch rover_road_assist road_assist.launch.py assist:=true
 """

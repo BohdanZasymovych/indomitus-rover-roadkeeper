@@ -1,7 +1,8 @@
 /**/remote_keyboard_joy:
   ros__parameters:
-    cmd_vel_topic: cmd_vel_remote   # laptop operators' twist_mux input, shared with
-                                    # a laptop gamepad (one operator at a time)
+    cmd_vel_topic: cmd_vel_remote_raw   # shared with a laptop gamepad (one operator at a
+                                        # time); road_assist_node passes it on to
+                                        # cmd_vel_remote, the twist_mux input
     publish_rate: 20.0
     speed: 0.5                  # starting stick deflection, 1..9,0 change it
 

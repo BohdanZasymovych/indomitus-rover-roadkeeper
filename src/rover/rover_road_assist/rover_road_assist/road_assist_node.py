@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Road keeping between the operator and twist_mux.
 
-Takes the operator's command on cmd_vel_remote_raw and the latest road/state,
-and publishes the command twist_mux sees on cmd_vel_remote — the only
-publisher there. One command out per command in, never on a timer, so this
-node can never keep the rover driving after the operator stops. Only
+Takes the operator's command on cmd_vel_in (cmd_vel_remote_raw) and the
+latest road/state, and publishes the command twist_mux sees on cmd_vel_out
+(cmd_vel_remote) — the only publisher there. Both names are set in
+config/road_assist.yaml. One command out per command in, never on a timer, so
+this node can never keep the rover driving after the operator stops. Only
 angular.z is ever changed.
 
     ros2 run rover_road_assist road_assist_node
@@ -50,15 +51,19 @@ class RoadAssistNode(Node):
         read_only = ParameterDescriptor(read_only=True)
         self.declare_parameter('warn', False, read_only)
         self.declare_parameter('status_rate', 5.0, read_only)
+        self.declare_parameter('cmd_vel_in', 'cmd_vel_remote_raw', read_only)
+        self.declare_parameter('cmd_vel_out', 'cmd_vel_remote', read_only)
         self._steering = self._declare_params(SteeringParams)
         self._assist = RoadAssist(self._steering, self._declare_params(AssistParams))
         self._status = None
         self.add_on_set_parameters_callback(self._on_set_parameters)
 
-        self._pub = self.create_publisher(Twist, 'cmd_vel_remote', 10)
+        cmd_vel_in = str(self.get_parameter('cmd_vel_in').value)
+        cmd_vel_out = str(self.get_parameter('cmd_vel_out').value)
+        self._pub = self.create_publisher(Twist, cmd_vel_out, 10)
         self._status_pub = self.create_publisher(String, 'road_assist/status', STATUS_QOS)
         self.create_service(Trigger, 'road_assist/toggle', self._on_toggle)
-        self.create_subscription(Twist, 'cmd_vel_remote_raw', self._on_command, 10)
+        self.create_subscription(Twist, cmd_vel_in, self._on_command, 10)
         # Best effort matches a camera pipeline publishing either way.
         self.create_subscription(RoadDeviation, 'road/state', self._on_road,
                                  qos_profile_sensor_data)
@@ -66,7 +71,8 @@ class RoadAssistNode(Node):
         status_rate = float(self.get_parameter('status_rate').value)
         self.create_timer(1.0 / max(status_rate, 1.0), self._publish_status)
 
-        self.get_logger().info(f'road_assist_node: {self._mode().value}')
+        self.get_logger().info(
+            f'road_assist_node: {cmd_vel_in} -> {cmd_vel_out}, {self._mode().value}')
 
     def _declare_params(self, cls):
         """One read-only parameter per field of cls, defaulting to the field's."""
