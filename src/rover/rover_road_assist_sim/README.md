@@ -50,8 +50,9 @@ One-run overrides: `noise:=true`, `latency:=true`, `confidence:=model`, `config:
 
 ## Notes
 
-- The road is drawn in RViz in `odom`. In simulation that starts at the spawn point, but it is
-  the EKF's estimate, so the robot model can drift slightly off the drawn road; the blue trail
-  is the true path, measured exactly like `road/state`.
+- RViz shows the true pose: `road_sim_node` publishes `map -> odom`, cancelling the EKF's
+  drift, and draws the road and the true trail (blue) in `map`. Set `publish_map_to_odom: false`
+  if something else localises (SLAM, AMCL); then set `frame_id: odom` and RViz's fixed frame to
+  `odom`, and the robot model shows the EKF's estimate, drifting off the road over time.
 - At a fork the "camera" follows whichever road the rover is on; steer to choose.
 - `max_road_age` in `road_assist.yaml` is 0.3 s: a `latency.delay` near it makes estimates STALE.

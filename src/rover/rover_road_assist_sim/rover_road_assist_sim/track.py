@@ -41,6 +41,16 @@ class Pose:
         return (self.x - distance * math.sin(self.yaw),
                 self.y + distance * math.cos(self.yaw))
 
+    def compose(self, other: 'Pose') -> 'Pose':
+        """`other`, given in this pose's frame, in this pose's parent frame."""
+        c, s = math.cos(self.yaw), math.sin(self.yaw)
+        return Pose(self.x + c * other.x - s * other.y,
+                    self.y + s * other.x + c * other.y, wrap(self.yaw + other.yaw))
+
+    def inverse(self) -> 'Pose':
+        c, s = math.cos(self.yaw), math.sin(self.yaw)
+        return Pose(-c * self.x - s * self.y, s * self.x - c * self.y, wrap(-self.yaw))
+
 
 @dataclass(frozen=True)
 class Projection:

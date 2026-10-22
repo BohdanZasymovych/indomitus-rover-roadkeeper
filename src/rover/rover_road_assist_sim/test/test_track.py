@@ -142,3 +142,22 @@ def test_branch_from_minus_one_means_no_branch():
 def test_a_branch_past_the_end_of_main_is_rejected():
     with pytest.raises(ValueError):
         Track.from_spec(ORIGIN, ['straight 10'], 3, ['straight 5'])
+
+
+# ── pose algebra (map -> odom correction) ────────────────────────────────────
+
+def test_a_pose_composed_with_its_inverse_is_the_identity():
+    p = Pose(3.0, -2.0, 2.5)
+    q = p.compose(p.inverse())
+
+    assert close(q.x, 0.0) and close(q.y, 0.0) and close(q.yaw, 0.0)
+
+
+def test_the_drift_correction_puts_the_estimate_on_the_truth():
+    # map->odom = truth * estimate^-1, so map->odom * estimate = truth.
+    truth = Pose(81.54, 38.45, 2.63)
+    estimate = Pose(81.22, 39.36, 2.68)
+    correction = truth.compose(estimate.inverse())
+    shown = correction.compose(estimate)
+
+    assert close(shown.x, truth.x) and close(shown.y, truth.y) and close(shown.yaw, truth.yaw)

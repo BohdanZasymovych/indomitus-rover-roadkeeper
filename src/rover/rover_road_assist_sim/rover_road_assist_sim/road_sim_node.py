@@ -7,6 +7,12 @@ road_assist_node would get from the real camera pipeline, with optional
 noise, latency and a modelled confidence. Also draws the track and the
 rover's true trail in RViz.
 
+So that RViz shows the rover where Gazebo has it, it can act as a perfect
+localiser: it publishes map -> odom, the transform that cancels the EKF's
+drift (truth * (odom -> base)^-1), and draws everything in map. Turn that
+off when something else localises (SLAM, AMCL), which would publish the same
+transform.
+
     ros2 launch rover_road_assist_sim road_assist_sim.launch.py
 
 The maths lives in track and perception_model; this file is only the ROS
@@ -17,14 +23,16 @@ import math
 from dataclasses import fields
 
 import rclpy
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, TransformStamped
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import ParameterDescriptor
+from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from rclpy.time import Time
 from std_msgs.msg import ColorRGBA
+from tf2_ros import Buffer, TransformBroadcaster, TransformException, TransformListener
 from visualization_msgs.msg import Marker, MarkerArray
 
 from indomitus_interfaces.msg import RoadDeviation
@@ -63,8 +71,11 @@ class RoadSimNode(Node):
         ground_truth_topic = param('ground_truth_topic', 'ground_truth/odom')
         road_state_topic = param('road_state_topic', 'road/state')
         markers_topic = param('markers_topic', 'road/markers')
-        self._frame_id = param('frame_id', 'odom')
+        self._frame_id = param('frame_id', 'map')
         publish_rate = float(param('publish_rate', 15.0))
+        self._localize = bool(param('publish_map_to_odom', True))
+        self._odom_frame = param('odom_frame', 'odom')
+        self._base_frame = param('base_frame', 'base_footprint')
 
         self._track = build_track(
             param('track.start', [-5.0, 0.0, 0.0]),
@@ -83,6 +94,11 @@ class RoadSimNode(Node):
         self._poses = DelayLine(latency)
         self._following = None
         self._trail = []
+
+        if self._localize:
+            self._tf_buffer = Buffer()
+            self._tf_listener = TransformListener(self._tf_buffer, self)
+            self._tf_broadcaster = TransformBroadcaster(self)
 
         self._pub = self.create_publisher(RoadDeviation, road_state_topic, 10)
         self._markers_pub = self.create_publisher(MarkerArray, markers_topic, LATCHED)
@@ -113,7 +129,41 @@ class RoadSimNode(Node):
     def _on_odom(self, msg: Odometry):
         p = msg.pose.pose
         stamp = Time.from_msg(msg.header.stamp).nanoseconds * 1e-9
-        self._poses.push(stamp, Pose(p.position.x, p.position.y, _yaw(p.orientation)))
+        truth = Pose(p.position.x, p.position.y, _yaw(p.orientation))
+        self._poses.push(stamp, truth)
+        if self._localize:
+            self._publish_map_to_odom(msg.header.stamp, truth)
+
+    def _publish_map_to_odom(self, stamp, truth: Pose):
+        """map -> odom such that map -> odom -> base lands exactly on the truth."""
+        try:
+            # The estimate from the same instant, or the newest one if the
+            # EKF has not caught up with this stamp yet.
+            try:
+                t = self._tf_buffer.lookup_transform(
+                    self._odom_frame, self._base_frame, Time.from_msg(stamp))
+            except TransformException:
+                t = self._tf_buffer.lookup_transform(
+                    self._odom_frame, self._base_frame, Time(), Duration(seconds=0.0))
+        except TransformException as exc:
+            self.get_logger().warn(
+                f'no {self._odom_frame} -> {self._base_frame} yet, not publishing '
+                f'{self._frame_id} -> {self._odom_frame}: {exc}', throttle_duration_sec=5.0)
+            return
+
+        tr = t.transform.translation
+        estimate = Pose(tr.x, tr.y, _yaw(t.transform.rotation))
+        correction = truth.compose(estimate.inverse())
+
+        out = TransformStamped()
+        out.header.stamp = stamp
+        out.header.frame_id = self._frame_id
+        out.child_frame_id = self._odom_frame
+        out.transform.translation.x = correction.x
+        out.transform.translation.y = correction.y
+        out.transform.rotation.z = math.sin(correction.yaw / 2.0)
+        out.transform.rotation.w = math.cos(correction.yaw / 2.0)
+        self._tf_broadcaster.sendTransform(out)
 
     def _tick(self):
         sample = self._poses.at(self._now())
