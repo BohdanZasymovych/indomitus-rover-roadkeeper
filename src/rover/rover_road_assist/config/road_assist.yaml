@@ -1,0 +1,31 @@
+/**/road_assist_node:
+  ros__parameters:
+    assist: false               # correct the steering; switched at runtime by the
+                                # road_assist/toggle service (std_srvs/Trigger)
+    warn: false                 # while assist is off, report WARN instead of OFF
+    status_rate: 5.0            # [Hz] how often road_assist/status is re-checked
+
+    # --- Steering law (steering_law.SteeringParams) ---
+    road_width: 3.0             # [m] RoadDeviation's offset is a fraction of half of this
+    k_e: 0.3                    # [1/s] offset -> approach angle
+    v_0: 0.5                    # [m/s]
+    theta_max: 0.35             # [rad] steepest approach toward the centre line
+    k_h: 1.2                    # [1/s] (heading error + approach angle) -> yaw rate
+    offset_deadband: 0.1        # fraction of the half-width
+    heading_deadband: 0.05      # [rad]
+    max_yaw_rate: 0.5           # [rad/s]
+    max_lateral_accel: 1.0      # [m/s^2] tightens the yaw rate cap with speed
+
+    # --- Blending (assist_state.AssistParams) ---
+    alpha_max: 0.5              # strongest share of the turn the assist ever takes
+    alpha_rate: 2.0             # [1/s]
+    min_speed: 0.3              # [m/s] no correction at or below; full from 2x
+    confidence_on: 0.6          # engages after staying above this for confidence_on_time
+    confidence_off: 0.4         # disengages below this
+    confidence_full: 0.8
+    confidence_on_time: 0.3     # [s]
+    override_yaw_rate: 0.4      # [rad/s] 40 % of scale_angular.yaw in rover_teleop/gamepad.yaml
+    override_hold: 1.5          # [s]
+    max_yaw_accel: 1.0          # [rad/s^2] on the yaw rate the assist adds
+    max_road_age: 0.3           # [s]
+    command_gap: 0.5            # [s] the cmd_vel_remote timeout in twist_mux.yaml
