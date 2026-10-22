@@ -22,3 +22,4 @@
       clear_errors_button: "X" # capital on purpose
       dataset_capture_button: ""
       dataset_record_button: ""
+      road_assist_button: "r"
