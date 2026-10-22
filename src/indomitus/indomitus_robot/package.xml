@@ -30,6 +30,7 @@
   <exec_depend>rover_peripherals</exec_depend>
   <exec_depend>rover_sensors</exec_depend>
   <exec_depend>rover_teleop</exec_depend>
+  <exec_depend>rover_roadkeeper</exec_depend>
 
   <!-- arm (arm_bringup also pulls in arm_tasks) -->
   <exec_depend>arm_bringup</exec_depend>

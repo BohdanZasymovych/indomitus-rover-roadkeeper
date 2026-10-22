@@ -1,0 +1,9 @@
+/**/roadkeeper_node:
+  ros__parameters:
+    camera_topic: "/rover/cameras/ir_cam/image_raw"
+    cmd_vel_topic: "/rover/cmd_vel_ext"
+    hud_topic: "/rover/roadkeeper/hud_image"
+    checkpoint_path: "weights/dinov2_seg_head_best.pt"
+    max_linear_speed: 1.5   # m/s
+    max_angular_speed: 0.8  # rad/s
+    device: "cuda"
