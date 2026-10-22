@@ -46,7 +46,7 @@ def test_the_camera_convention_is_flipped_to_rep103():
 
 
 def test_a_road_the_camera_sees_on_the_right_turns_the_rover_right():
-    offset, heading = road_error(0.5, 0.1, PARAMS.road_width)
+    offset, heading = road_error(0.5, 0.1, PARAMS.nominal_road_width)
 
     assert correction_yaw_rate(offset, heading, 1.0, PARAMS) < 0.0
 
@@ -58,7 +58,7 @@ def test_no_error_asks_for_no_correction():
 
 
 def test_errors_inside_both_deadbands_are_ignored():
-    offset_db = PARAMS.offset_deadband * PARAMS.road_width / 2.0
+    offset_db = PARAMS.offset_deadband * PARAMS.nominal_road_width / 2.0
 
     assert correction_yaw_rate(0.9 * offset_db, 0.9 * PARAMS.heading_deadband,
                                1.0, PARAMS) == 0.0
@@ -66,7 +66,7 @@ def test_errors_inside_both_deadbands_are_ignored():
 
 def test_the_heading_is_not_deadbanded_while_correcting_an_offset():
     # It is the damping term: dropping it mid-correction lets the rover weave.
-    offset = PARAMS.road_width   # far outside the offset deadband
+    offset = PARAMS.nominal_road_width   # far outside the offset deadband
     small = 0.5 * PARAMS.heading_deadband
 
     assert (correction_yaw_rate(offset, small, 1.0, PARAMS)

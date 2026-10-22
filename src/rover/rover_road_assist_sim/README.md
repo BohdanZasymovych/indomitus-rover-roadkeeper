@@ -23,8 +23,9 @@ Gazebo true pose -> road_sim_node -> road/state
 - a bridge for that one topic -> `ground_truth/odom`
 - `road_sim_node`: ground truth + track -> `road/state`, plus RViz markers
 - `road_assist_node` is started by `sim_gz` itself (laptops cannot drive any sim without
-  it); this launch passes it the config's `road_assist_node` section and the simulated
-  `road_width` through `sim_gz`'s `road_assist_params_file`
+  it); this launch passes it the config's `road_assist_node` section, with
+  `nominal_road_width` defaulting to the simulated `road_width`, through `sim_gz`'s
+  `road_assist_params_file`
 - RViz (`rviz:=false` to skip)
 
 ## Config — `config/road_sim.yaml`
@@ -32,7 +33,7 @@ Gazebo true pose -> road_sim_node -> road/state
 | group | what |
 |---|---|
 | topics | `ground_truth_topic`, `road_state_topic`, `markers_topic`, `frame_id` |
-| road | `road_width` (also forced into `road_assist_node`), `lookahead`, view limits |
+| road | `road_width` (also the assist's `nominal_road_width` unless set), `lookahead`, view limits |
 | `track` | `start`, `scale`, `main` and one `branch` as `"straight L"` / `"left R deg"` / `"right R deg"` |
 | `noise` | `enabled`, std of offset / heading / confidence, `seed` |
 | `latency` | `enabled`, `delay` — the estimate is stamped with the pose time, so it arrives this old |

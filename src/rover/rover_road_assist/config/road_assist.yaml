@@ -11,7 +11,11 @@
     cmd_vel_out: cmd_vel_remote       # rover_drive/config/twist_mux.yaml
 
     # --- Steering law (steering_law.SteeringParams) ---
-    road_width: 3.0             # [m] RoadDeviation's offset is a fraction of half of this
+    # [m] RoadDeviation's offset is a fraction of half a road width, and this
+    # turns it into metres. A gain reference, not a measurement: the gains
+    # below are tuned for it, and roads within ~2x of it either way behave
+    # acceptably (much narrower ones weave). See SteeringParams.
+    nominal_road_width: 3.0
     k_e: 0.3                    # [1/s] offset -> approach angle
     v_0: 0.5                    # [m/s]
     theta_max: 0.35             # [rad] steepest approach toward the centre line

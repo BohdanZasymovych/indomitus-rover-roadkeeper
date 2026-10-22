@@ -13,8 +13,8 @@
     publish_rate: 15.0                      # [Hz] camera rate
 
     # --- Road ---
-    # Also copied into road_assist_node by the launch file, so the "camera"
-    # and the assist always agree on what a normalised offset means.
+    # Also the road_assist_node's nominal_road_width, unless that is set in
+    # its section at the bottom of this file.
     road_width: 3.0             # [m]
     lookahead: 0.0              # [m] measure the road this far ahead of the rover
     max_visible_offset: 2.0     # road further off than this many half-widths is out of view
@@ -71,3 +71,5 @@
 /**/road_assist_node:
   ros__parameters:
     assist: true                # start with the correction on; r / the D-pad toggles it
+    # nominal_road_width: 3.0   # uncomment to make the assist expect another width
+                                # than the simulated road_width above

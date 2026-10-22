@@ -30,8 +30,13 @@ MIN_LIMIT_SPEED = 0.1
 
 @dataclass(frozen=True)
 class SteeringParams:
-    #: [m] Turns the camera's normalised offset into metres.
-    road_width: float = 3.0
+    #: [m] Turns the camera's normalised offset into metres. Not the width of
+    #: the road being driven — perception does not report that — but a gain
+    #: reference: the assist responds the same to the same fraction of the
+    #: road on any width, and the gains above are tuned for a road this wide.
+    #: Roads within about 2x of it either way behave acceptably; a much
+    #: narrower one effectively raises k_e and starts to weave.
+    nominal_road_width: float = 3.0
     #: [1/s] How steeply an offset turns into an approach angle.
     k_e: float = 0.3
     #: [m/s] Keeps the approach angle sane near standstill.
@@ -95,7 +100,7 @@ def correction_yaw_rate(offset: float, heading: float, v: float,
     standing still, which also keeps v + v_0 away from zero.
     """
     v = max(v, 0.0)
-    e = deadband(offset, p.offset_deadband * p.road_width / 2.0)
+    e = deadband(offset, p.offset_deadband * p.nominal_road_width / 2.0)
     # The heading error is the damping term, so it is only deadbanded while
     # the offset is too: ignoring a small heading error during a correction
     # leaves the rover free to drift across the road at v·sin(heading_deadband)

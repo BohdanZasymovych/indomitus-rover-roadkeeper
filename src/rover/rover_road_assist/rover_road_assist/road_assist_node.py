@@ -109,7 +109,7 @@ class RoadAssistNode(Node):
 
     def _on_road(self, msg: RoadDeviation):
         offset, heading = road_error(
-            msg.lateral_offset, msg.heading_error, self._steering.road_width)
+            msg.lateral_offset, msg.heading_error, self._steering.nominal_road_width)
         self._assist.on_road(RoadEstimate(
             offset=offset,
             heading=heading,

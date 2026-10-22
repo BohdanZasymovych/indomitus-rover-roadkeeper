@@ -40,7 +40,7 @@ def drive_hands_off(confidence_mode: str, v: float):
     track = default_track()
     cam = RoadCamera(track, CameraParams(road_width=3.0), NoiseParams(),
                      ConfidenceParams(mode=confidence_mode))
-    assist = assist_state.RoadAssist(steering_law.SteeringParams(road_width=3.0),
+    assist = assist_state.RoadAssist(steering_law.SteeringParams(nominal_road_width=3.0),
                                      assist_state.AssistParams())
     x, y, yaw, t = 0.0, 0.3, 0.0, 0.0
     furthest, worst = 0.0, 0.0

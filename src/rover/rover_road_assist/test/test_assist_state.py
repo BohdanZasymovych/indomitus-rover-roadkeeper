@@ -254,7 +254,7 @@ def test_the_closed_loop_centres_the_rover():
 def test_with_the_default_deadbands_the_rover_settles_without_weaving():
     # It stops at the edge of the offset deadband — the point of a deadband —
     # and must stay there rather than drift from edge to edge.
-    edge = STEERING.offset_deadband * STEERING.road_width / 2.0
+    edge = STEERING.offset_deadband * STEERING.nominal_road_width / 2.0
     samples = simulate(STEERING, duration=60.0)
 
     assert all(abs(e) <= edge + 0.01 for t, e in samples if t >= 20.0)

@@ -63,11 +63,12 @@ def _launch(context, tmp_dir: str):
                         branch.get('from', -1), branch.get('segments', []))
     road_file = _write(tmp_dir, 'road.sdf', road_sdf(track, road_width))
 
-    # road_assist_node gets the config's own section, plus the road width
-    # forced to the simulated one: a mismatch would silently rescale every
-    # offset the "camera" reports.
+    # road_assist_node gets the config's own section, plus its nominal road
+    # width set to the simulated one, so the assist behaves as tuned. Set
+    # nominal_road_width in the config's road_assist_node section to test a
+    # road narrower or wider than the assist expects.
     assist = dict(config.get(ASSIST_NODE, {}).get('ros__parameters', {}))
-    assist['road_width'] = road_width
+    assist.setdefault('nominal_road_width', road_width)
     assist_file = _write(tmp_dir, 'road_assist.yaml', yaml.safe_dump(
         {ASSIST_NODE: {'ros__parameters': assist}}))
 
