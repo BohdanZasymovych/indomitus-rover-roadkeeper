@@ -1,136 +1,111 @@
+"""
+Global configuration for the Roadkeeper binary road perception pipeline.
+
+Pure Python: NO ROS imports here. Every tunable threshold of the pipeline lives
+in this file so that train.py, test_video.py and the ROS 2 node all agree.
+"""
 from pathlib import Path
-import os
-import numpy as np
 
 # ==============================================================================
-# 1. PATHS & DIRECTORIES
+# 1. PATHS
 # ==============================================================================
-PACKAGE_DIR = Path(__file__).resolve().parent.parent
-REPO_ROOT_DIR = PACKAGE_DIR.parents[2]  # indomitus-rover-roadkeeper
+PACKAGE_DIR = Path(__file__).resolve().parent.parent          # src/rover/rover_roadkeeper
+REPO_ROOT_DIR = PACKAGE_DIR.parents[2]                         # indomitus-rover-roadkeeper
 
-# Check candidate locations for track-1 dataset
-DATASET_CANDIDATES = [
+_DATASET_CANDIDATES = [
     PACKAGE_DIR / "track-1",
     PACKAGE_DIR / "track1",
     REPO_ROOT_DIR / "track-1",
     REPO_ROOT_DIR / "track1",
-    Path("/home/marko/def_tech_hackathon/track1"),
-    Path("/home/marko/def_tech_hackathon/track-1"),
     Path.home() / "def_tech_hackathon" / "track1",
+    Path.home() / "def_tech_hackathon" / "track-1",
 ]
+DATA_DIR = next((p for p in _DATASET_CANDIDATES if p.exists()), PACKAGE_DIR / "track-1")
 
-DATA_DIR = next((p for p in DATASET_CANDIDATES if p.exists()), PACKAGE_DIR / "track-1")
-
-# Segmentation directories
 SEG_FRAMES_DIR = DATA_DIR / "seg" / "frames"
-SEG_MASKS_DIR = DATA_DIR / "seg" / "markdown"  # Named "markdown" in track-1 dataset
-
-# Videos directory: check if videos are in subfolder 'videos/' or directly in DATA_DIR
+SEG_MASKS_DIR = DATA_DIR / "seg" / "markdown"   # folder is literally named "markdown"
 VIDEOS_DIR = DATA_DIR / "videos" if (DATA_DIR / "videos").exists() else DATA_DIR
 
 WEIGHTS_DIR = PACKAGE_DIR / "weights"
 OUTPUTS_DIR = PACKAGE_DIR / "outputs"
-
-WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
-OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-
-DEFAULT_CHECKPOINT = WEIGHTS_DIR / "dinov2_seg_head_best.pt"
+DEFAULT_CHECKPOINT = WEIGHTS_DIR / "road_segmenter_best.pt"
 
 # ==============================================================================
-# 2. IMAGE & DINOV2 GEOMETRY CONSTANTS
+# 2. IMAGE GEOMETRY
 # ==============================================================================
-# Native resolution of seg/ dataset
-ORIG_WIDTH = 720
-ORIG_HEIGHT = 364
+# Every frame (any source resolution) is resized to this before perception.
+FRAME_WIDTH = 720
+FRAME_HEIGHT = 364
 
-# DINOv2 ViT-S/14 requires dimensions divisible by patch_size = 14
-# 714 = 51 * 14, 364 = 26 * 14
-DINOV2_PATCH_SIZE = 14
-DINOV2_WIDTH = 714
-DINOV2_HEIGHT = 364
-DINOV2_EMBED_DIM = 384
+# DINOv2 ViT-S/14 needs multiples of 14: 714 = 51*14, 364 = 26*14
 DINOV2_MODEL_NAME = "dinov2_vits14"
+DINOV2_INPUT_WIDTH = 714
+DINOV2_INPUT_HEIGHT = 364
+DINOV2_PATCH_SIZE = 14
+DINOV2_EMBED_DIM = 384
+DINOV2_NUM_LAYERS = 4          # concat patch tokens of the last N transformer blocks
 
-# Burned-in black HUD rectangle in bottom-left corner (95x35 px in 720x364 coordinates)
-HUD_MASK_BOX = {
-    "x_min": 0,
-    "y_min": ORIG_HEIGHT - 35,  # 329
-    "x_max": 95,
-    "y_max": ORIG_HEIGHT,       # 364
-}
-
-# ==============================================================================
-# 3. SEMANTIC CLASSES & COLOR MAPPINGS
-# ==============================================================================
-NUM_CLASSES = 5
-IGNORE_INDEX = 0
-
-CLASS_NAMES = {
-    0: "ignore",      # Black: unlabeled background, bottom-left HUD box
-    1: "road",        # Magenta: drivable surface / dirt track / ruts
-    2: "sky",         # Blue: sky / dark background above horizon
-    3: "vegetation",  # Cyan: non-drivable bushes / tall grass / edges
-    4: "obstacle",    # Yellow: poles / vertical obstacles / hazards
-}
-
-# Exact RGB tuples in seg/markdown/*.png
-RGB_TO_CLASS = {
-    (0, 0, 0): 0,
-    (255, 0, 255): 1,
-    (0, 0, 255): 2,
-    (0, 255, 255): 3,
-    (255, 255, 0): 4,
-}
-
-# BGR colors for OpenCV tactical HUD visualization
-CLASS_COLORS_BGR = np.array([
-    [0, 0, 0],        # 0: ignore (transparent)
-    [0, 210, 0],      # 1: road (bright tactical green)
-    [180, 60, 0],     # 2: sky (muted blue)
-    [0, 140, 255],    # 3: vegetation (orange warning boundary)
-    [0, 0, 255],      # 4: obstacle (bright red hazard)
-], dtype=np.uint8)
-
-# Class weights for CrossEntropyLoss (upweighting thin yellow obstacles & vegetation)
-CLASS_WEIGHTS = [0.0, 1.0, 0.8, 1.5, 3.5]
+# Burned-in black HUD rectangle (bottom-left, 95x35 px in 720x364 coordinates)
+HUD_BOX = (0, FRAME_HEIGHT - 35, 95, FRAME_HEIGHT)   # (x_min, y_min, x_max, y_max)
 
 # ==============================================================================
-# 4. DATASET SPLIT & TRAINING HYPERPARAMETERS
+# 3. BINARY LABELS
 # ==============================================================================
-# Contiguous block split (301 frames total: 001000..001300)
-# First 240 frames -> Train, Last 61 frames -> Validation
-TRAIN_SPLIT_COUNT = 240
+ROAD_RGB = (255, 0, 255)       # magenta in seg/markdown/*.png -> road (1)
+LABEL_BACKGROUND = 0
+LABEL_ROAD = 1
+LABEL_IGNORE = 255             # HUD box (and optionally unlabeled black pixels)
+
+# Unlabeled black (0,0,0) pixels (~13%): far darkness. Supervising them as
+# background makes the model more conservative about calling things "road".
+UNLABELED_AS_BACKGROUND = True
+
+# ==============================================================================
+# 4. PREPROCESSING (shared by training and inference!)
+# ==============================================================================
+CLAHE_CLIP_LIMIT = 2.5
+CLAHE_TILE_GRID = (8, 8)
+
+# ==============================================================================
+# 5. TRAINING
+# ==============================================================================
+TRAIN_SPLIT_COUNT = 240        # contiguous split: 001000..001239 train, 001240..001300 val
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
-NUM_EPOCHS = 25
+NUM_EPOCHS = 30
 SEED = 42
+# pos_weight < 1.0 down-weights the positive (road) term of BCE, i.e. relatively
+# penalises false-positive road predictions -> fights "whole field is road".
+BCE_POS_WEIGHT = 0.7
+DICE_WEIGHT = 0.5
 
 # ==============================================================================
-# 5. PATH PLANNER, HEALTH MONITOR & CRUISE CONTROL PARAMETERS
+# 6. MASK POST-PROCESSING
 # ==============================================================================
-# Drivable ROI vertical range (fraction of image height)
-ROI_Y_MIN_RATIO = 0.50   # Below horizon
-ROI_Y_MAX_RATIO = 0.90   # Above UGV front hood / bottom HUD
+ROAD_PROB_THRESHOLD = 0.65     # pixel is road only if p(road) > this (no argmax!)
+MORPH_KERNEL_SIZE = 7          # elliptical kernel for open (denoise) + close (fill ruts)
+LOWER_HALF_START_RATIO = 0.5   # largest component is chosen by its area in the lower half
+MIN_COMPONENT_AREA_PX = 1500   # smaller "largest" components are rejected as noise
 
-# Lookahead horizontal bands inside ROI (from near to far)
-NUM_LOOKAHEAD_BANDS = 4
-BAND_WEIGHTS = [0.40, 0.30, 0.20, 0.10]  # Nearer bands have higher steering priority
+# ==============================================================================
+# 7. SINGLE-ROI OFFSET + TEMPORAL SMOOTHING
+# ==============================================================================
+ROI_Y_MIN_RATIO = 0.55         # below horizon
+ROI_Y_MAX_RATIO = 0.88         # above hood / HUD box
+ROI_BOTTOM_WEIGHT = 2.0        # row weight ramps 1.0 (top of ROI) -> this (bottom)
 
-# Obstacle repulsion strength
-OBSTACLE_REPULSION_GAIN = 1.5
-MIN_ROAD_PIXELS_PER_BAND = 150
+MIN_ROAD_AREA_RATIO = 0.04     # road must fill >= 4% of the ROI to be a valid measurement
+FULL_CONFIDENCE_AREA_RATIO = 0.25  # area ratio at which the area term of confidence saturates
 
-# PD Steering Controller & Temporal Smoothing
-KP_STEER = 0.70          # Proportional gain
-KD_STEER = 0.22          # Derivative gain
-EMA_ALPHA = 0.35         # Exponential moving average factor for target centroid smoothing
-LANE_DEPARTURE_TH = 0.28 # Normalized lateral offset threshold to trigger LDW warning
+EMA_ALPHA = 0.2                # strong smoothing (0.15..0.25)
+MAX_OFFSET_DELTA = 0.05        # rate limiter: max |offset change| per frame
+INVALID_DECAY = 0.95           # on invalid frames, held offset decays toward 0 by this factor
 
-# Camera & Link Health Thresholds
-LINK_LOSS_MEAN_GRAY_TH = 20.0     # Mean pixel brightness (0-255) below which frame is black
-LINK_LOSS_MIN_DURATION_SEC = 1.0  # Minimum seconds of black screen to declare LINK_LOST
-GLARE_PIXEL_INTENSITY_TH = 245    # Pixel intensity for IR glare detection
-GLARE_AREA_RATIO_TH = 0.12        # Fraction of central ROI saturated to trigger GLARE_WARNING
-BUSH_ENTRAPMENT_VEG_RATIO = 0.75  # Vegetation ratio in ROI to trigger OFF_ROAD warning
-LOW_ROAD_CONFIDENCE_TH = 0.25     # Below this confidence, UGV reduces speed or halts
+# ==============================================================================
+# 8. ROS 2 DEFAULTS (used only by ros2_node.py; overridable via ROS parameters)
+# ==============================================================================
+ROS_NODE_NAME = "road_offset_perception_node"
+ROS_IMAGE_TOPIC = "/rover/front_camera/image_raw"
+ROS_OFFSET_TOPIC = "/rover/road_offset"
+ROS_DEBUG_IMAGE_TOPIC = "/rover/road_perception/debug_image"

@@ -1,0 +1,12 @@
+[*] Train 240 frames (001000-001239) | Val 61 frames (001240-001300)
+[*] Arch 'dinov2': 0.44M trainable params
+[DONE] 147s, best val IoU 98.65% -> /home/marko/deftech_hackathon_git/indomitus-rover-roadkeeper/src/rover/rover_roadkeeper/weights/road_segmenter_best.pt
+
+================================================================================================
+ VALIDATION (contiguous block 001240-001300, 61 frames)  |  arch=dinov2  device=cuda
+================================================================================================
+ p > 0.50 (argmax-equivalent)        : IoU  98.6% | Prec  98.9% | Rec  99.7% | pred road 46.6% (gt 46.2%)
+ p > 0.65                           : IoU  98.6% | Prec  99.1% | Rec  99.5% | pred road 46.4% (gt 46.2%)
+ p > 0.65 + morph + largest comp.   : IoU  98.5% | Prec  99.0% | Rec  99.6% | pred road 46.5% (gt 46.2%)   <- deployed
+ End-to-end process_frame throughput : 14.0 FPS
+================================================================================================

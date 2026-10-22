@@ -1,9 +1,9 @@
-/**/roadkeeper_node:
+/**/road_offset_perception_node:
   ros__parameters:
-    camera_topic: "/rover/cameras/ir_cam/image_raw"
-    cmd_vel_topic: "/rover/cmd_vel_ext"
-    hud_topic: "/rover/roadkeeper/hud_image"
-    checkpoint_path: "weights/dinov2_seg_head_best.pt"
-    max_linear_speed: 1.5   # m/s
-    max_angular_speed: 0.8  # rad/s
-    device: "cuda"
+    image_topic: "/rover/front_camera/image_raw"
+    offset_topic: "/rover/road_offset"            # geometry_msgs/Vector3Stamped: x=offset, y=conf, z=valid
+    debug_image_topic: "/rover/road_perception/debug_image"
+    weights_path: ""                              # "" -> <share>/rover_roadkeeper/weights/road_segmenter_best.pt
+    prob_threshold: 0.65
+    device: ""                                    # "" -> cuda if available, else cpu
+    publish_debug_image: false

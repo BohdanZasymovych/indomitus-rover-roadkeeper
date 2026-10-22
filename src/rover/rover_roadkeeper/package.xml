@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rover_roadkeeper</name>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <description>
-    Roadkeeper: Onboard ADAS, Few-Shot Road Segmentation (DINOv2),
-    Link-Loss Autonomous Cruise Recovery, and PD Steering Controller for UGV.
+    Roadkeeper perception: binary road segmentation (frozen DINOv2 + light head) and a
+    smoothed lateral road offset published for downstream lane-keeping / link-loss control.
   </description>
   <maintainer email="indomitus@ucu.edu.ua">UCUSpaceRobotics</maintainer>
   <license>MIT</license>
@@ -13,11 +13,9 @@
   <exec_depend>rclpy</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>cv_bridge</exec_depend>
-  <exec_depend>indomitus_interfaces</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>
+  <!-- torch / torchvision are installed via pip (see requirements.txt / setup_env.sh) -->
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

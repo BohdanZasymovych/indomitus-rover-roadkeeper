@@ -1,225 +1,143 @@
-import os
+"""
+Binary Road vs Non-Road dataset for track-1/seg/.
+
+Labels:  1 = road (magenta), 0 = everything else, 255 = ignore (HUD box [+ unlabeled black
+if UNLABELED_AS_BACKGROUND is False]).
+Split:   CONTIGUOUS temporal blocks only (frames are consecutive & highly correlated):
+         first TRAIN_SPLIT_COUNT -> train, rest -> val. Never random.
+Images go through the SAME preprocess_ir() (gray + CLAHE) used at inference time.
+Augmentations are plain OpenCV/numpy (IR degradations: exposure, gamma, blur, noise,
+JPEG artifacts, small affine jitter for camera-mount differences).
+"""
 from pathlib import Path
-from typing import Optional, Tuple, List
-import numpy as np
+from typing import List, Optional, Tuple
+
 import cv2
+import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+from torch.utils.data import DataLoader, Dataset
 
-from rover_roadkeeper.config import (
-    SEG_FRAMES_DIR,
-    SEG_MASKS_DIR,
-    ORIG_WIDTH,
-    ORIG_HEIGHT,
-    HUD_MASK_BOX,
-    TRAIN_SPLIT_COUNT,
-    BATCH_SIZE,
-    IGNORE_INDEX,
-)
+from rover_roadkeeper import config as C
+from rover_roadkeeper.perception.base_model import preprocess_ir, to_tensor
 
 
-def rgb_to_class_indices(mask_rgb: np.ndarray) -> np.ndarray:
-    """
-    Vectorized conversion from RGB semantic mask to class indices (0..4).
-    RGB Mapping:
-      - (0, 0, 0)       -> 0: ignore
-      - (255, 0, 255)   -> 1: road
-      - (0, 0, 255)     -> 2: sky
-      - (0, 255, 255)   -> 3: vegetation
-      - (255, 255, 0)   -> 4: obstacle
-    """
-    H, W = mask_rgb.shape[:2]
-    class_mask = np.zeros((H, W), dtype=np.int64)
-
-    r = mask_rgb[:, :, 0]
-    g = mask_rgb[:, :, 1]
-    b = mask_rgb[:, :, 2]
-
-    # Road: high Red, low Green, high Blue (Magenta)
-    is_road = (r > 128) & (g < 128) & (b > 128)
-    class_mask[is_road] = 1
-
-    # Sky: low Red, low Green, high Blue (Blue)
-    is_sky = (r < 128) & (g < 128) & (b > 128)
-    class_mask[is_sky] = 2
-
-    # Vegetation: low Red, high Green, high Blue (Cyan)
-    is_veg = (r < 128) & (g > 128) & (b > 128)
-    class_mask[is_veg] = 3
-
-    # Obstacle: high Red, high Green, low Blue (Yellow)
-    is_obs = (r > 128) & (g > 128) & (b < 128)
-    class_mask[is_obs] = 4
-
-    # Always mask bottom-left burned-in HUD box to IGNORE_INDEX
-    y_min, y_max = HUD_MASK_BOX["y_min"], HUD_MASK_BOX["y_max"]
-    x_min, x_max = HUD_MASK_BOX["x_min"], HUD_MASK_BOX["x_max"]
-    class_mask[y_min:y_max, x_min:x_max] = IGNORE_INDEX
-
-    return class_mask
+def rgb_mask_to_binary(mask_rgb: np.ndarray) -> np.ndarray:
+    """RGB semantic mask -> uint8 {0: background, 1: road, 255: ignore}."""
+    r, g, b = mask_rgb[..., 0], mask_rgb[..., 1], mask_rgb[..., 2]
+    label = np.full(mask_rgb.shape[:2], C.LABEL_BACKGROUND, dtype=np.uint8)
+    label[(r > 127) & (g < 128) & (b > 127)] = C.LABEL_ROAD
+    if not C.UNLABELED_AS_BACKGROUND:
+        label[(r < 128) & (g < 128) & (b < 128)] = C.LABEL_IGNORE
+    x0, y0, x1, y1 = C.HUD_BOX
+    label[y0:y1, x0:x1] = C.LABEL_IGNORE
+    return label
 
 
-def get_train_transforms(target_height: int = 364, target_width: int = 720) -> A.Compose:
-    """
-    Albumentations pipeline for training with IR camera degradation augmentations.
-    """
-    return A.Compose([
-        A.Resize(height=target_height, width=target_width),
-        A.HorizontalFlip(p=0.5),
-        A.RandomBrightnessContrast(brightness_limit=0.25, contrast_limit=0.25, p=0.6),
-        A.OneOf([
-            A.MotionBlur(blur_limit=7, p=0.5),
-            A.GaussianBlur(blur_limit=5, p=0.5),
-            A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
-        ], p=0.5),
-        A.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-            max_pixel_value=255.0,
-        ),
-        ToTensorV2(),
-    ])
+# ----------------------------------------------------------------------------
+# Augmentations (operate on raw BGR uint8 BEFORE CLAHE, like real sensor degradations)
+# ----------------------------------------------------------------------------
+def _augment(img: np.ndarray, lbl: np.ndarray, rng: np.random.Generator) -> Tuple[np.ndarray, np.ndarray]:
+    h, w = lbl.shape
 
+    # Geometric: small scale / rotation / shift (different mounts, pitch on bumps)
+    if rng.random() < 0.7:
+        angle = rng.uniform(-5, 5)
+        scale = rng.uniform(0.9, 1.15)
+        M = cv2.getRotationMatrix2D((w / 2, h / 2), angle, scale)
+        M[:, 2] += rng.uniform(-0.05, 0.05, size=2) * (w, h)
+        img = cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101)
+        lbl = cv2.warpAffine(lbl, M, (w, h), flags=cv2.INTER_NEAREST, borderValue=C.LABEL_IGNORE)
 
-def get_val_transforms(target_height: int = 364, target_width: int = 720) -> A.Compose:
-    """
-    Validation pipeline without random degradations.
-    """
-    return A.Compose([
-        A.Resize(height=target_height, width=target_width),
-        A.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-            max_pixel_value=255.0,
-        ),
-        ToTensorV2(),
-    ])
+    if rng.random() < 0.5:
+        img, lbl = img[:, ::-1], lbl[:, ::-1]
 
+    img = img.astype(np.float32)
+    # Exposure / contrast / gamma (IR auto-gain swings)
+    img = img * rng.uniform(0.7, 1.3) + rng.uniform(-30, 30)
+    img = np.clip(img, 0, 255)
+    if rng.random() < 0.5:
+        img = 255.0 * (img / 255.0) ** rng.uniform(0.7, 1.5)
 
-class RoadSegmentationDataset(Dataset):
-    """
-    Dataset for Track-1 road segmentation.
-    Enforces contiguous temporal block split:
-      - Train: first TRAIN_SPLIT_COUNT frames (001000..001239)
-      - Val: remaining frames (001240..001300)
-    """
-
-    def __init__(
-        self,
-        frames_dir: Optional[Path] = None,
-        masks_dir: Optional[Path] = None,
-        split: str = "train",
-        transform: Optional[A.Compose] = None,
-    ):
-        self.frames_dir = Path(frames_dir or SEG_FRAMES_DIR)
-        self.masks_dir = Path(masks_dir or SEG_MASKS_DIR)
-        self.split = split
-        self.transform = transform
-
-        if not self.frames_dir.exists():
-            raise FileNotFoundError(f"Frames directory not found: {self.frames_dir}")
-        if not self.masks_dir.exists():
-            raise FileNotFoundError(f"Masks directory not found: {self.masks_dir}")
-
-        all_frame_files = sorted([
-            f for f in self.frames_dir.glob("*.jpg")
-            if not f.name.endswith(":Zone.Identifier")
-        ])
-
-        if len(all_frame_files) == 0:
-            raise RuntimeError(f"No JPG images found in {self.frames_dir}")
-
-        # Contiguous temporal split
-        if split == "train":
-            self.frame_files = all_frame_files[:TRAIN_SPLIT_COUNT]
-        elif split == "val":
-            self.frame_files = all_frame_files[TRAIN_SPLIT_COUNT:]
-        elif split == "all":
-            self.frame_files = all_frame_files
+    # Blur: gaussian or horizontal/vertical motion blur
+    if rng.random() < 0.3:
+        if rng.random() < 0.5:
+            img = cv2.GaussianBlur(img, (5, 5), 0)
         else:
-            raise ValueError(f"Unknown split: {split}. Choose from ['train', 'val', 'all'].")
+            k = int(rng.integers(5, 11))
+            kernel = np.zeros((k, k), np.float32)
+            if rng.random() < 0.5:
+                kernel[k // 2, :] = 1.0 / k
+            else:
+                kernel[:, k // 2] = 1.0 / k
+            img = cv2.filter2D(img, -1, kernel)
+
+    # Sensor noise
+    if rng.random() < 0.3:
+        img = img + rng.normal(0, rng.uniform(3, 12), img.shape)
+
+    img = np.clip(img, 0, 255).astype(np.uint8)
+
+    # Video compression artifacts
+    if rng.random() < 0.3:
+        ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, int(rng.integers(25, 75))])
+        if ok:
+            img = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+
+    return np.ascontiguousarray(img), np.ascontiguousarray(lbl)
+
+
+# ----------------------------------------------------------------------------
+class BinaryRoadDataset(Dataset):
+    def __init__(self, split: str = "train", augment: Optional[bool] = None,
+                 frames_dir: Path = C.SEG_FRAMES_DIR, masks_dir: Path = C.SEG_MASKS_DIR, seed: int = C.SEED):
+        frames: List[Path] = sorted(Path(frames_dir).glob("*.jpg"))
+        if not frames:
+            raise FileNotFoundError(f"No frames in {frames_dir}")
+        if split == "train":
+            frames = frames[:C.TRAIN_SPLIT_COUNT]
+        elif split == "val":
+            frames = frames[C.TRAIN_SPLIT_COUNT:]
+        elif split != "all":
+            raise ValueError("split must be 'train', 'val' or 'all'")
+
+        self.names = [f.stem for f in frames]
+        self.augment = (split == "train") if augment is None else augment
+        self.rng = np.random.default_rng(seed)
+
+        # 301 small frames -> just cache everything in RAM.
+        self.images, self.labels = [], []
+        for f in frames:
+            img = cv2.imread(str(f), cv2.IMREAD_COLOR)
+            m = cv2.imread(str(Path(masks_dir) / f"{f.stem}.png"), cv2.IMREAD_COLOR)
+            if img is None or m is None:
+                raise FileNotFoundError(f"Could not read pair for {f.stem}")
+            if img.shape[:2] != (C.FRAME_HEIGHT, C.FRAME_WIDTH):
+                img = cv2.resize(img, (C.FRAME_WIDTH, C.FRAME_HEIGHT), interpolation=cv2.INTER_AREA)
+                m = cv2.resize(m, (C.FRAME_WIDTH, C.FRAME_HEIGHT), interpolation=cv2.INTER_NEAREST)
+            self.images.append(img)
+            self.labels.append(rgb_mask_to_binary(cv2.cvtColor(m, cv2.COLOR_BGR2RGB)))
 
     def __len__(self) -> int:
-        return len(self.frame_files)
+        return len(self.images)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        frame_path = self.frame_files[idx]
-        stem = frame_path.stem
-        mask_path = self.masks_dir / f"{stem}.png"
-
-        if not mask_path.exists():
-            raise FileNotFoundError(f"Mask not found for frame: {mask_path}")
-
-        # Load image (RGB)
-        image_bgr = cv2.imread(str(frame_path))
-        if image_bgr is None:
-            raise ValueError(f"Failed to load image: {frame_path}")
-        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-
-        # Load mask (RGB)
-        mask_bgr = cv2.imread(str(mask_path))
-        if mask_bgr is None:
-            raise ValueError(f"Failed to load mask: {mask_path}")
-        mask_rgb = cv2.cvtColor(mask_bgr, cv2.COLOR_BGR2RGB)
-
-        # Convert RGB mask to class index (0..4)
-        class_mask = rgb_to_class_indices(mask_rgb)
-
-        # Apply Albumentations
-        if self.transform is not None:
-            augmented = self.transform(image=image_rgb, mask=class_mask)
-            image_tensor = augmented["image"]
-            mask_tensor = torch.as_tensor(augmented["mask"], dtype=torch.long)
-        else:
-            # Fallback tensor conversion
-            image_tensor = torch.from_numpy(image_rgb).permute(2, 0, 1).float() / 255.0
-            mask_tensor = torch.from_numpy(class_mask).long()
-
-        return image_tensor, mask_tensor
+        img, lbl = self.images[idx], self.labels[idx]
+        if self.augment:
+            img, lbl = _augment(img, lbl, self.rng)
+        x = to_tensor(preprocess_ir(img))
+        return x, torch.from_numpy(lbl.astype(np.int64))
 
 
-def get_dataloaders(
-    batch_size: int = BATCH_SIZE,
-    num_workers: int = 2,
-    frames_dir: Optional[Path] = None,
-    masks_dir: Optional[Path] = None,
-) -> Tuple[DataLoader, DataLoader]:
-    """
-    Helper function to instantiate train and validation DataLoaders.
-    """
-    train_transform = get_train_transforms(ORIG_HEIGHT, ORIG_WIDTH)
-    val_transform = get_val_transforms(ORIG_HEIGHT, ORIG_WIDTH)
+def _worker_init(worker_id: int) -> None:
+    info = torch.utils.data.get_worker_info()
+    info.dataset.rng = np.random.default_rng(torch.initial_seed() % 2**32)
 
-    train_dataset = RoadSegmentationDataset(
-        frames_dir=frames_dir,
-        masks_dir=masks_dir,
-        split="train",
-        transform=train_transform,
-    )
-    val_dataset = RoadSegmentationDataset(
-        frames_dir=frames_dir,
-        masks_dir=masks_dir,
-        split="val",
-        transform=val_transform,
-    )
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=torch.cuda.is_available(),
-        drop_last=True,
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=num_workers,
-        pin_memory=torch.cuda.is_available(),
-        drop_last=False,
-    )
-
-    return train_loader, val_loader
+def get_dataloaders(batch_size: int = C.BATCH_SIZE, num_workers: int = 2) -> Tuple[DataLoader, DataLoader]:
+    train_ds, val_ds = BinaryRoadDataset("train"), BinaryRoadDataset("val")
+    pin = torch.cuda.is_available()
+    train_dl = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers,
+                          pin_memory=pin, drop_last=True, worker_init_fn=_worker_init,
+                          persistent_workers=num_workers > 0)
+    val_dl = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin)
+    return train_dl, val_dl

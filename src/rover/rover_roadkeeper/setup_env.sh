@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "=== [1/4] Creating project directories ==="
-mkdir -p weights outputs config launch rover_roadkeeper/models rover_roadkeeper/control rover_roadkeeper/utils rover_roadkeeper/ros scripts
+mkdir -p weights outputs
 
 echo "=== [2/4] Setting up Python virtual environment (.venv) ==="
 if [ ! -d ".venv" ]; then
