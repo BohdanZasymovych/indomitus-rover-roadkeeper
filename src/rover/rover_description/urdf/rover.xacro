@@ -26,6 +26,11 @@
   <xacro:arg name="stereo_camera_simulate_depth" default="false"/>
   <xacro:arg name="stereo_camera_simulate_imu" default="true"/>
 
+  <!-- Simulation only: publish the model's true pose on the Gazebo topic
+       /model/<model name>/odometry, for scoring against wheel odometry or
+       faking perception (rover_road_assist_sim). Not bridged by default. -->
+  <xacro:arg name="simulate_ground_truth" default="false"/>
+
 
   <!-- Main robot description -->
   <xacro:include filename="$(find rover_description)/urdf/rover.urdf.xacro"/>
@@ -50,6 +55,18 @@
               name="gz::sim::systems::JointStatePublisher">
       </plugin>
     </gazebo>
+
+    <xacro:if value="$(arg simulate_ground_truth)">
+      <gazebo>
+        <plugin filename="gz-sim-odometry-publisher-system"
+                name="gz::sim::systems::OdometryPublisher">
+          <odom_frame>world</odom_frame>
+          <robot_base_frame>base_link</robot_base_frame>
+          <odom_publish_frequency>50</odom_publish_frequency>
+          <dimensions>3</dimensions>
+        </plugin>
+      </gazebo>
+    </xacro:if>
   </xacro:if>
 
 </robot>

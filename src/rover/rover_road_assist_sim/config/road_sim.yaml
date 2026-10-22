@@ -1,0 +1,73 @@
+# Road-assist simulation: road_assist_sim.launch.py reads this whole file.
+#
+# Keep every number that is a float written as one (1.0, not 1): ROS rejects
+# an int for a parameter declared as a double.
+
+/**/road_sim_node:
+  ros__parameters:
+    # --- Topics ---
+    ground_truth_topic: ground_truth/odom   # bridged from Gazebo's OdometryPublisher
+    road_state_topic: road/state            # what road_assist_node reads
+    markers_topic: road/markers             # + road/markers/trail
+    frame_id: odom                          # RViz frame the road is drawn in
+    publish_rate: 15.0                      # [Hz] camera rate
+
+    # --- Road ---
+    # Also copied into road_assist_node by the launch file, so the "camera"
+    # and the assist always agree on what a normalised offset means.
+    road_width: 3.0             # [m]
+    lookahead: 0.0              # [m] measure the road this far ahead of the rover
+    max_visible_offset: 2.0     # road further off than this many half-widths is out of view
+    max_visible_heading: 1.047  # [rad] (60 deg) road turned further away is out of view
+
+    track:
+      start: [-5.0, 0.0, 0.0]   # [x m, y m, yaw deg]; the rover spawns at the origin
+      scale: 1.0                # multiplies every length and radius
+      # "straight L" | "left R deg" | "right R deg"
+      main:
+        - "straight 25"         # settle in
+        - "left 15 90"          # wide, gentle
+        - "straight 12"
+        - "right 8 120"         # tight: near the yaw-rate limit at speed
+        - "left 10 50"          # S-bend
+        - "right 10 50"
+        - "straight 30"         # the fork is at its start (index 6)
+        - "left 7 180"          # hairpin
+        - "straight 25"
+      branch:
+        from: 6                 # forks at the start of main's segment 6 (0-based); -1 = none
+        segments:
+          - "right 14 35"
+          - "straight 20"
+          - "left 14 35"
+          - "straight 15"
+
+    # --- Imperfections ---
+    noise:
+      enabled: false
+      offset_std: 0.05          # [m]
+      heading_std: 0.02         # [rad]
+      confidence_std: 0.03      # model confidence only
+      seed: 0
+
+    latency:
+      enabled: false
+      delay: 0.12               # [s]; at road_assist's max_road_age (0.3) and above,
+                                # every estimate arrives STALE
+
+    # --- Confidence ---
+    # fixed: always fixed_value, so only the steering is under test.
+    # model: a product of the factors below, each switchable.
+    confidence:
+      mode: fixed               # fixed | model
+      fixed_value: 0.9
+      lateral: true             # drops from 0.7 to 1.3 half-widths off centre
+      heading: true             # drops from 0.35 to 0.7 rad off the road direction
+      curvature: true           # drops for curves tighter than R 10 m, to 0 at R 4 m...
+      curvature_preview: 8.0    # [m] ...this far ahead
+      fork_confidence: 0.3      # multiplier while both fork roads are in view
+
+# Layered over rover_road_assist's road_assist.yaml for the simulation only.
+/**/road_assist_node:
+  ros__parameters:
+    assist: true                # start with the correction on; r / the D-pad toggles it

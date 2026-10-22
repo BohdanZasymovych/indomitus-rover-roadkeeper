@@ -2,7 +2,7 @@ import os
 from glob import glob
 from setuptools import find_packages, setup
 
-package_name = 'rover_comms'
+package_name = 'rover_road_assist_sim'
 
 setup(
     name=package_name,
@@ -14,17 +14,17 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'),
             glob(os.path.join('launch', '*.launch.py'))),
+        (os.path.join('share', package_name, 'config'),
+            glob(os.path.join('config', '*.yaml'))),
+        (os.path.join('share', package_name, 'rviz'),
+            glob(os.path.join('rviz', '*.rviz'))),
     ],
-    # Not a console_script: it is a standalone diagnostic, wanted precisely
-    # when the node will not start, on a rover where the installed workspace
-    # may be all there is. Installed so `ros2 run rover_comms uart_loopback.py`
-    # works without the source tree.
-    scripts=['tools/uart_loopback.py'],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='yuriifito',
-    maintainer_email='fito.pn@ucu.edu.ua',
-    description='Rover end of the LoRa fallback link',
+    maintainer='bohdan',
+    maintainer_email='bohdan.zasymovych@gmail.com',
+    description='Gazebo test bench for rover_road_assist: a generated road and fake '
+                'road perception computed from the ground-truth pose.',
     license='MIT',
     extras_require={
         'test': [
@@ -33,8 +33,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'lora_rover_node = rover_comms.lora_rover_node:main',
-            'gs_link_lamp_node = rover_comms.gs_link_lamp_node:main',
+            f'road_sim_node = {package_name}.road_sim_node:main',
         ],
     },
 )
