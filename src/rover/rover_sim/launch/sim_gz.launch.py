@@ -38,7 +38,7 @@ SWERVE_CONTROLLERS = [LEGACY_SWERVE_CONTROLLER, SHAPE_SWERVE_CONTROLLER]
 DEFAULT_SWERVE_CONTROLLER = SHAPE_SWERVE_CONTROLLER
 
 # List of available worlds.
-SUPPORTED_WORLDS = ["mars_yard", "nav2_test_world"]
+SUPPORTED_WORLDS = ["mars_yard", "nav2_test_world", "flat_track"]
 
 # List of worlds that utilize the dynamic resolution map loading feature.
 SUPPORTED_RESOLUTION_WORLDS = ["mars_yard"]
@@ -113,8 +113,12 @@ def setup_environment() -> list:
         os.environ["QT_QPA_PLATFORM"] = "xcb"
 
     # Nvidia Optimus & EGL Deadlock Workaround (Prevents EGL dri2 crash)
+    # Only with the NVIDIA kernel driver actually loaded: the vendor file is
+    # installed with the userspace libraries regardless, and forcing GLX onto a
+    # driver that is not running breaks every GL window (Gazebo GUI, RViz) on
+    # machines that render with another GPU.
     nvidia_egl_path = "/usr/share/glvnd/egl_vendor.d/10_nvidia.json"
-    if os.path.exists(nvidia_egl_path):
+    if os.path.exists(nvidia_egl_path) and os.path.exists("/proc/driver/nvidia/version"):
         os.environ["__NV_PRIME_RENDER_OFFLOAD"] = "1"
         os.environ["__GLX_VENDOR_LIBRARY_NAME"] = "nvidia"
         os.environ["__EGL_VENDOR_LIBRARY_FILENAMES"] = nvidia_egl_path
@@ -356,6 +360,10 @@ def generate_launch_description() -> LaunchDescription:
             default_value=EnvironmentVariable("ROVER_NAMESPACE", default_value="rover"),
             description="ROS namespace all rover nodes/topics are pushed under (arm excluded).",
         ),
+        DeclareLaunchArgument(
+            "road_assist_params_file", default_value="",
+            description="Params file layered over rover_road_assist's road_assist.yaml.",
+        ),
 
         # 1. Support modern Gazebo (Harmonic/Ionic)
         AppendEnvironmentVariable(
@@ -420,6 +428,14 @@ def generate_launch_description() -> LaunchDescription:
             include_launch("rover_drive", "drive_manager.launch.py", {
                 "use_sim_time": "true",
                 "controller_name": LaunchConfiguration("swerve_controller"),
+            }),
+
+            # Laptop teleop publishes cmd_vel_remote_raw; this is what passes it
+            # on to cmd_vel_remote, so laptops cannot drive the sim without it.
+            include_launch("rover_road_assist", "road_assist.launch.py", {
+                "rover_namespace": "",
+                "use_sim_time": "true",
+                "extra_params_file": LaunchConfiguration("road_assist_params_file"),
             }),
         ]),
 

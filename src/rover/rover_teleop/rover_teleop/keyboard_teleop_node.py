@@ -57,7 +57,7 @@ class KeyboardJoyNode(Node):
 
     def __init__(self, keymap: dict, **node_kwargs):
         super().__init__('remote_keyboard_joy', **node_kwargs)
-        self.declare_parameter('cmd_vel_topic', 'cmd_vel_remote')
+        self.declare_parameter('cmd_vel_topic', 'cmd_vel_remote_raw')
         self.declare_parameter('publish_rate', 20.0)
         self.declare_parameter('speed', 0.5)
         self.declare_parameter('initial_hold', 0.6)
