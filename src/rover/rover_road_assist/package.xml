@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rover_road_assist</name>
+  <version>0.0.0</version>
+  <description>
+    Camera-based road keeping for manual driving: segments the road, estimates the rover's offset and heading relative to it, and warns the operator on road departure or corrects the steering.
+  </description> 
+  <maintainer email="bohdan.zasymovych@gmail.com">bohdan</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>indomitus_interfaces</depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
