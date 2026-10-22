@@ -30,7 +30,8 @@ def generate_launch_description():
         'use_joy', default_value='true',
         description='Wired gamepad plugged into the rover itself (cmd_vel_joy, '
                     'top twist_mux priority) - separate from the ground '
-                    'station (cmd_vel_gs) and operator laptops (cmd_vel_remote)',
+                    'station (cmd_vel_gs) and operator laptops (cmd_vel_remote_raw, '
+                    'through road_assist_node to cmd_vel_remote)',
     )
 
     joy_dev_arg = DeclareLaunchArgument(
@@ -101,6 +102,13 @@ def generate_launch_description():
             }),
 
             include_launch('rover_drive', 'twist_mux.launch.py'),
+
+            # Between laptop teleop (cmd_vel_remote_raw) and twist_mux
+            # (cmd_vel_remote): laptops cannot drive without it, even with the
+            # assist off.
+            include_launch('rover_road_assist', 'road_assist.launch.py', {
+                'rover_namespace': '',   # already pushed by this group
+            }),
 
             include_launch('rover_drive', 'drive_manager.launch.py'),
 

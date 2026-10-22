@@ -7,7 +7,8 @@ own node names and its own twist_mux input, so two of them never share a topic:
 
   source:=remote (default)  a gamepad on an operator's laptop
       /rover/remote/joy, /rover/remote_joy_node,
-      /rover/remote_gamepad_interpreter -> cmd_vel_remote
+      /rover/remote_gamepad_interpreter -> cmd_vel_remote_raw, which
+      rover_road_assist's road_assist_node passes on to cmd_vel_remote
   source:=rover             the wired gamepad plugged into the rover itself
       /rover/joy, /rover/joy_node, /rover/gamepad_interpreter -> cmd_vel_joy
       (top twist_mux priority); rover.launch.py passes this explicitly
@@ -26,7 +27,7 @@ from launch_ros.substitutions import FindPackageShare
 
 SOURCES = {
     'rover': ('', 'joy', 'cmd_vel_joy', 'teleop/joystick_active'),
-    'remote': ('remote_', 'remote/joy', 'cmd_vel_remote', '~/active'),
+    'remote': ('remote_', 'remote/joy', 'cmd_vel_remote_raw', '~/active'),
 }
 
 
@@ -85,7 +86,7 @@ def generate_launch_description():
             default_value='remote',
             choices=list(SOURCES),
             description="Which control source this gamepad is: 'remote' (an operator's "
-                        "laptop, cmd_vel_remote) or 'rover' (wired to the rover, "
+                        "laptop, cmd_vel_remote_raw) or 'rover' (wired to the rover, "
                         "cmd_vel_joy, top priority).",
         ),
         DeclareLaunchArgument(

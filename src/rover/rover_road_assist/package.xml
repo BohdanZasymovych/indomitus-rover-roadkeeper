@@ -10,11 +10,16 @@
   <license>MIT</license>
 
   <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>cv_bridge</depend>
   <depend>indomitus_interfaces</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
 
   <test_depend>python3-pytest</test_depend>
 

@@ -1,0 +1,35 @@
+/**/road_assist_node:
+  ros__parameters:
+    # --- Mode ---
+    assist: false                     # correct the steering; the only runtime-changeable one (road_assist/toggle, r / D-pad)
+    warn: false                       # while assist is off, report status WARN instead of OFF (nothing is steered either way)
+    status_rate: 5.0                  # [Hz] how often road_assist/status is re-checked, so STALE shows even with no commands
+
+    # --- Topics ---
+    cmd_vel_in: cmd_vel_remote_raw    # operator's command in; laptop teleop publishes it (gamepad.launch.py, keyboard.yaml)
+    cmd_vel_out: cmd_vel_remote       # corrected command out; twist_mux's remote input, this node must be its only publisher
+
+    # --- Steering law (steering_law.SteeringParams) ---
+    nominal_road_width: 3.0           # [m] turns the camera's offset (fraction of half-width) into metres; a gain reference, not measured
+    k_e: 1.0                          # [1/s] how steeply an offset turns into an approach angle toward the centre: higher = pulls back harder
+    v_0: 0.5                          # [m/s] added to speed in the approach angle, so it stays sane when slow: higher = gentler at low speed
+    theta_max: 0.45                   # [rad] steepest angle the rover is steered toward the centre line at, however far off it is
+    k_h: 2.25                         # [1/s] yaw rate per rad of (heading error + approach angle); the damping: higher = less overshoot
+    offset_deadband: 0.07             # offsets within this fraction of the half-width are ignored (0.15 m on a 3 m road)
+    heading_deadband: 0.05            # [rad] heading errors within this are ignored, but only while the offset is inside its deadband
+    max_yaw_rate: 0.5                 # [rad/s] hard cap on the correction's yaw rate
+    max_lateral_accel: 1.0            # [m/s^2] also caps the correction's yaw rate at a_lat / speed, so it gets gentler as speed rises
+
+    # --- Blending (assist_state.AssistParams) ---
+    alpha_max: 0.75                   # largest share of the turn the assist ever takes: 0 = operator only, 1 = assist only
+    alpha_rate: 2.0                   # [1/s] how fast that share may change, so the assist never grabs or drops the wheel at once
+    min_speed: 0.3                    # [m/s] no correction at or below this forward speed (or reversing); full strength from 2x
+    confidence_on: 0.6                # the assist engages once confidence has stayed above this for confidence_on_time...
+    confidence_off: 0.4               # ...and disengages as soon as it drops below this; strength ramps up from here...
+    confidence_full: 0.8              # ...to full strength at this confidence
+    confidence_on_time: 0.3           # [s] how long confidence must stay above confidence_on before engaging
+    override_yaw_rate: 0.4            # [rad/s] operator yaw rate above this counts as a deliberate turn (40 % of gamepad.yaml scale_angular.yaw)
+    override_hold: 1.5                # [s] how long the assist stays out of the way after such a turn
+    max_yaw_accel: 1.0                # [rad/s^2] how fast the yaw rate the assist adds may change; the operator's own input is never limited
+    max_road_age: 0.3                 # [s] road estimates older than this (by their stamp) are ignored: status STALE
+    command_gap: 0.5                  # [s] a pause in commands longer than this resets the assist; keep equal to cmd_vel_remote's twist_mux timeout
