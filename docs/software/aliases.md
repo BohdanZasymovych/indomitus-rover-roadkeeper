@@ -8,8 +8,6 @@ To speed up development and standardize common workflows, our development contai
 | --- | --- | --- |
 | **`cb`**| `colcon build --symlink-install` | Builds the workspace using symlinks. |
 | **`cbr`** | `colcon build --symlink-install --packages-select-regex "^rover_"` | Builds only packages whose name starts with `rover_`. |
-| **`cba`** | `colcon build --symlink-install --packages-select-regex "^arm_"` | Builds only packages whose name starts with `arm_`. |
-| **`cbp`** | `colcon build --symlink-install --packages-select-regex "^panel_"` | Builds only packages whose name starts with `panel_`. |
 | **`sws`**, **`sb`**  | `source install/setup.bash` | Sources the local workspace. Prints a confirmation or a warning if the file is missing. |
 | **`tl`** | `ros2 topic list` | Lists all active ROS 2 topics. |
 | **`nl`** | `ros2 node list` | Lists all active ROS 2 nodes. |

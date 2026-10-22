@@ -31,19 +31,6 @@
   <exec_depend>rover_sensors</exec_depend>
   <exec_depend>rover_teleop</exec_depend>
 
-  <!-- arm (arm_bringup also pulls in arm_tasks) -->
-  <exec_depend>arm_bringup</exec_depend>
-  <exec_depend>arm_description</exec_depend>
-  <exec_depend>arm_hardware_interface</exec_depend>
-  <exec_depend>arm_moveit_config</exec_depend>
-  <exec_depend>arm_peripherals</exec_depend>
-  <exec_depend>arm_sensors</exec_depend>
-  <exec_depend>arm_teleop</exec_depend>
-
-  <!-- panel task -->
-  <exec_depend>panel_bringup</exec_depend>
-  <exec_depend>panel_description</exec_depend>
-  <exec_depend>panel_perception</exec_depend>
 
   <!-- Recording ROS 2 bags in MCAP format -->
   <exec_depend>rosbag2_storage_mcap</exec_depend>
