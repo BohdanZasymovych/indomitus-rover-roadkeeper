@@ -2,8 +2,6 @@
 
 alias cb="colcon build --symlink-install"
 alias cbr="colcon build --symlink-install --packages-select-regex "^rover_""
-alias cba="colcon build --symlink-install --packages-select-regex "^arm_""
-alias cbp="colcon build --symlink-install --packages-select-regex "^panel_""
 alias sws="if [ -f install/setup.bash ]; then source install/setup.bash && echo 'Workspace sourced!'; else echo 'No install/setup.bash found in this directory.'; fi"
 alias sb="if [ -f install/setup.bash ]; then source install/setup.bash && echo 'Workspace sourced!'; else echo 'No install/setup.bash found in this directory.'; fi"
 
@@ -12,7 +10,6 @@ alias nl="ros2 node list"
 alias te="ros2 topic echo"
 
 alias launch_rover="ros2 launch rover_bringup rover.launch.py"
-alias launch_arm="ros2 launch arm_bringup arm.launch.py"
 alias launch_gamepad="ros2 launch rover_teleop gamepad.launch.py"
 alias launch_navigation="ros2 launch rover_bringup navigation.launch.py"
 alias launch_nav="ros2 launch rover_bringup navigation.launch.py"

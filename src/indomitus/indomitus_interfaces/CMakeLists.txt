@@ -10,7 +10,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MotorStatus.msg"
   "msg/ChassisStatus.msg"
   "msg/FaultEvent.msg"
-  "msg/EndEffectorState.msg"
   "msg/LightsState.msg"
   "msg/DriveState.msg"
   "msg/DatasetState.msg"
@@ -18,8 +17,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetWeight.srv"
   "srv/SetSteerZero.srv"
   "srv/SetTrafficLight.srv"
-  "srv/AcquireArmMotionLock.srv"
-  "srv/ReleaseArmMotionLock.srv"
   DEPENDENCIES std_msgs action_msgs
 )
 
