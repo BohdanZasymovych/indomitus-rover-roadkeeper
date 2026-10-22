@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rover_drone_detection</name>
+  <version>0.0.0</version>
+  <description>
+    Camera-based detection of waiter FPV drones (ambush drones sitting by the road): YOLO on the camera stream, a confirmed WARN/DANGER threat level and an annotated image for the operator, and a log of every sighting with the rover's pose and the drone's estimated position.
+  </description>
+  <maintainer email="andriykulbabapetrovych@gmail.com">andrii</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>vision_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>tf2_ros</depend>
+  <depend>indomitus_interfaces</depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <!-- ultralytics (+ torch) has no rosdep key: pip install -r requirements.txt -->
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

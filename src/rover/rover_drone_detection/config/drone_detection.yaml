@@ -1,0 +1,36 @@
+/**/drone_detection_node:
+  ros__parameters:
+    # --- Model (detector.Detector) ---
+    # A file name is looked up in share/rover_drone_detection/models; a path is
+    # used as is (e.g. a TensorRT .engine exported on the Jetson).
+    #   drone_yolo11s_640.pt  cv-yolo11s fold1, 19 MB, mAP50 0.73 on its fold, CV mean 0.52
+    #                         (default: the only one that finds the small far drones, see models/README.md)
+    #   drone_yolo26n_640.pt  yolo26n-640-4, 5.4 MB, mAP50 0.56; ~2x faster but misses most small drones
+    model: drone_yolo11s_640.pt
+    conf: 0.25                  # minimum score; yolo11s scores true drones ~0.3-0.6
+    iou: 0.5                    # NMS IoU (yolo26 is NMS-free and ignores it)
+    imgsz: 640                  # inference size, the one both models were trained at
+    device: ''                  # '' = cuda:0 if there is one, else cpu; or 'cpu', '0'
+    half: false                 # FP16, CUDA only
+    rate: 10.0                  # [Hz] at most; the newest frame only, older ones are dropped
+
+    # --- Geometry (geometry.py) ---
+    hfov_deg: 90.0              # [deg] used only while camera_info has K = 0 (no calibration)
+    drone_size_m: 0.3           # [m] typical FPV frame width, for the range estimate
+    world_frame: odom           # rover_localization EKF; 'map' with slam_toolbox
+    base_frame: base_footprint
+    gps_topic: ''               # sensor_msgs/NavSatFix to log lat/lon with; '' = none
+
+    # --- Sighting log (sighting_log.py) ---
+    log_enabled: true
+    log_dir: ~/drone_sightings  # <log_dir>/<date>/sightings.jsonl + snapshots/
+    log_interval: 1.0           # [s] between records while a drone is confirmed
+
+    # --- Threat level (threat.ThreatParams) ---
+    confirm_hits: 3             # frames with a drone ...
+    confirm_window: 1.0         # [s] ... within this long raise WARN/DANGER
+    clear_after: 2.0            # [s] without a drone drops back to CLEAR
+    danger_size: 0.12           # box height / image height at or above = DANGER
+    path_half_width: 0.25       # path zone: |box centre x / width - 0.5| at most this
+    horizon: 0.45               # ... and box bottom y / height at least this
+    draw_path_zone: true        # outline the path zone on drones/image_annotated

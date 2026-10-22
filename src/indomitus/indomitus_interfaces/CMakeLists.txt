@@ -14,6 +14,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DriveState.msg"
   "msg/DatasetState.msg"
   "msg/RoadDeviation.msg"
+  "msg/DroneThreat.msg"
   "action/ContainerLid.action"
   "srv/GetWeight.srv"
   "srv/SetSteerZero.srv"

@@ -243,3 +243,6 @@ AMENT_IGNORE
 
 # AI context
 ai-context/
+# Drone detection training runs (weights we ship live in rover_drone_detection/models)
+runs/
+runs-*.zip
