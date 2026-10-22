@@ -33,12 +33,23 @@ Per command: $0 local -h
 
 Examples:
   $0 local          # dev container
+  $0 local sim      # tmux session in it
   $0 rover          # via hotspot
   $0 rover -n       # already on LAN
   $0 rover --eth    # over Ethernet
   $0 rover core     # tmux session
   $0 rover arm -r   # read-only
 EOF
+}
+
+# Attach to (or create) tmux session $S inside the container; $1 = read-only.
+# S is passed via docker exec -e so the script needs no local quoting/expansion.
+tmux_script() {
+  if [ "$1" = true ]; then
+    echo 'exec tmux attach-session -r -t "$S"'
+  else
+    echo 'if ! tmux has-session -t "$S" 2>/dev/null; then echo "[tmux] Session $S does not exist yet - creating it. Existing: $(tmux ls -F "#S" 2>/dev/null | tr "\n" " ")"; fi; exec tmux new-session -A -s "$S"'
+  fi
 }
 
 # ===========================================================================
@@ -51,14 +62,22 @@ run_local() {
   local ROS_DISTRO="humble"
   local WORKSPACE_DIR="/opt/ws"
   local HARDWARE_WORKSPACE_DIR="/opt/hw_ws"
+  local SESSION=""
+  local READ_ONLY=false
 
   show_local_help() {
     cat << EOF
-Usage: $0 local [OPTIONS]
+Usage: $0 local [SESSION] [OPTIONS]
 
 Shell in the local dev container (started if needed).
 
+SESSION            tmux session to attach (sim, nav, ...),
+                   created if missing. Detach: Ctrl-b d
+                   ('exit' closes it). None: plain shell.
+
 Options:
+  -r, --read-only    With SESSION: watch only
+                     (session must exist)
   --name NAME        Container (${CONTAINER_NAME})
   --compose FILE     Compose file, from repo root
                      (${COMPOSE_FILE})
@@ -75,10 +94,17 @@ EOF
       --compose)    [[ "$#" -ge 2 ]] || error "$1 requires an argument."; COMPOSE_FILE="$2"; shift 2;;
       --ros-distro) [[ "$#" -ge 2 ]] || error "$1 requires an argument."; ROS_DISTRO="$2"; shift 2;;
       --workspace)  [[ "$#" -ge 2 ]] || error "$1 requires an argument."; WORKSPACE_DIR="$2"; shift 2;;
+      -r|--read-only)  READ_ONLY=true; shift 1;;
       -h|--help)       show_local_help; exit 0;;
-      *)               error "Unknown option: $1\nRun '$0 local --help' for usage." ;;
+      -*)              error "Unknown option: $1\nRun '$0 local --help' for usage." ;;
+      *)
+        [[ -z "$SESSION" ]] || error "Only one SESSION can be given (got '$SESSION' and '$1')."
+        [[ "$1" =~ ^[A-Za-z0-9_-]+$ ]] || error "Invalid session name: '$1' (letters, digits, _ and - only)."
+        SESSION="$1"; shift 1;;
     esac
   done
+
+  [[ "$READ_ONLY" = false || -n "$SESSION" ]] || error "--read-only needs a SESSION."
 
   step "Running Pre-Flight Checks (Local)..."
   if ! docker info > /dev/null 2>&1; then error "Docker is not running."; fi
@@ -101,6 +127,14 @@ EOF
     success "Container created and started."
   else
     error "Container '${CONTAINER_NAME}' is in an unexpected state: '${CONTAINER_STATUS}'. Aborting."
+  fi
+
+  if [ -n "$SESSION" ]; then
+    step "Attaching to tmux session '${SESSION}'..."
+    echo -e "Detach with \e[33mCtrl-b d\e[0m - typing exit closes the session."
+    docker exec -it -e S="$SESSION" "$CONTAINER_NAME" sh -c "$(tmux_script "$READ_ONLY")"
+    echo -e "\n\e[32m[DONE]\e[0m Detached from '${SESSION}'."
+    return
   fi
 
   step "Opening Interactive Terminal..."
@@ -226,12 +260,7 @@ EOF
   if [ -n "$SESSION" ]; then
     step "Attaching to tmux session '${SESSION}'..."
     echo -e "Detach with \e[33mCtrl-b d\e[0m - typing exit closes the session."
-    # S is passed via -e so the script below needs no local quoting/expansion.
-    local TMUX_SCRIPT='if ! tmux has-session -t "$S" 2>/dev/null; then echo "[tmux] Session $S does not exist yet - creating it. Existing: $(tmux ls -F "#S" 2>/dev/null | tr "\n" " ")"; fi; exec tmux new-session -A -s "$S"'
-    if [ "$READ_ONLY" = true ]; then
-      TMUX_SCRIPT='exec tmux attach-session -r -t "$S"'
-    fi
-    ssh -t -q "${TARGET}" "docker exec -it -e S='${SESSION}' '${CONTAINER_NAME}' sh -c '${TMUX_SCRIPT}'"
+    ssh -t -q "${TARGET}" "docker exec -it -e S='${SESSION}' '${CONTAINER_NAME}' sh -c '$(tmux_script "$READ_ONLY")'"
     echo -e "\n\e[32m[DONE]\e[0m Detached from '${SESSION}'."
     return
   fi

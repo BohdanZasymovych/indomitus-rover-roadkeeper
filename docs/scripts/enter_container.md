@@ -21,9 +21,10 @@ Enter the remote production container on the rover computer:
 ./scripts/enter_container.sh rover
 ```
 
-## tmux sessions on the rover
+## tmux sessions
 
 - `./scripts/enter_container.sh rover arm` → tmux session `arm` in `rover_prod` (created if missing; `tmux new-session -A`).
+- `./scripts/enter_container.sh local sim` → same in the local `rover_dev` (e.g. `sim`, `nav`, `rviz`).
 - `-r` / `--read-only` → watch only (session must exist).
 - No session name → plain shell, no tmux.
 - Sessions = one terminal per subsystem (`core`, `arm`, `nav`, …) or personal (`yurii`); launches keep running when the laptop disconnects.
