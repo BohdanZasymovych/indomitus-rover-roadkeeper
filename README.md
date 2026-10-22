@@ -1,7 +1,7 @@
-<h1 align="center">Indomitus — Mars Rover Core</h1>
+<h1 align="center">Indomitus — Roadkeeper</h1>
 
 <p align="center">
-  Everything that runs on <b>Indomitus</b> &mdash; the Mars rover built by the
+  Camera-based road keeping for <b>Indomitus</b> &mdash; the Mars rover built by the
   <a href="https://indomitus-ucu.vercel.app/">UCU Space Robotics</a> team at the
   Ukrainian Catholic University for the
   <a href="https://roverchallenge.eu/">European Rover Challenge</a>.
@@ -14,17 +14,40 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/UCUSpaceRobotics/indomitus-rover-core/actions/workflows/publish_image.yaml?query=branch%3Amain"><img alt="main build" src="https://img.shields.io/github/actions/workflow/status/UCUSpaceRobotics/indomitus-rover-core/publish_image.yaml?branch=main&label=main%20build&logo=github"></a>
-  <a href="https://github.com/UCUSpaceRobotics/indomitus-rover-core/actions/workflows/publish_image.yaml?query=branch%3Adevelop"><img alt="develop build" src="https://img.shields.io/github/actions/workflow/status/UCUSpaceRobotics/indomitus-rover-core/publish_image.yaml?branch=develop&label=develop%20build&logo=github"></a>
-  <a href="https://github.com/UCUSpaceRobotics/indomitus-rover-core/releases/latest"><img alt="main release" src="https://img.shields.io/github/v/release/UCUSpaceRobotics/indomitus-rover-core?label=main&color=green"></a>
-  <a href="https://github.com/UCUSpaceRobotics/indomitus-rover-core/releases"><img alt="develop release" src="https://img.shields.io/github/v/release/UCUSpaceRobotics/indomitus-rover-core?include_prereleases&label=develop"></a>
+  <a href="https://github.com/BohdanZasymovych/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml?query=branch%3Amain"><img alt="main build" src="https://img.shields.io/github/actions/workflow/status/BohdanZasymovych/indomitus-rover-roadkeeper/publish_image.yaml?branch=main&label=main%20build&logo=github"></a>
+  <a href="https://github.com/BohdanZasymovych/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml?query=branch%3Adevelop"><img alt="develop build" src="https://img.shields.io/github/actions/workflow/status/BohdanZasymovych/indomitus-rover-roadkeeper/publish_image.yaml?branch=develop&label=develop%20build&logo=github"></a>
+  <a href="https://github.com/BohdanZasymovych/indomitus-rover-roadkeeper/releases"><img alt="develop release" src="https://img.shields.io/github/v/release/BohdanZasymovych/indomitus-rover-roadkeeper?include_prereleases&label=develop"></a>
 </p>
+
+---
+
+
+## About
+
+Roadkeeper helps an operator drive the rover along a road by hand. A camera
+watches the road ahead, the road is segmented out of each frame, and the
+rover's position relative to it is estimated: how far it is from the road
+centre and how far its heading is turned away from the road's direction. With
+that estimate the rover can warn the operator when it is about to leave the
+road, or correct the steering itself while the operator keeps driving.
+
+The operator stays in control the whole time. Roadkeeper only assists manual
+driving and does not plan routes or drive on its own.
+
+> **Fork:** This repository is a fork of
+> [UCUSpaceRobotics/indomitus-rover-core](https://github.com/UCUSpaceRobotics/indomitus-rover-core),
+> the main Indomitus rover codebase. It keeps the rover's drive, sensors,
+> teleop and simulation from there. The robotic arm, the switch panel, Nav2
+> autonomous navigation, the LoRa/ground-station comms link and ArUco tracking
+> have been removed, because road keeping doesn't need them.
+
 
 ---
 
 
 ## Table of Contents
 
+- [About](#about)
 - [Getting Started](#getting-started)
 - [Documentation](#documentation)
 - [Rover Usage](#rover-usage)

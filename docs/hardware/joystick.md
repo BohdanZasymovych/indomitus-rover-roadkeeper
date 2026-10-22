@@ -63,4 +63,4 @@ This matters because `cmd_vel_joy` outranks every other command source in twist_
 
 Nothing is lost by the silence: the swerve controller has its own `cmd_vel_timeout_s`, so an unattended rover stops either way.
 
-To hand control over deliberately without unplugging anything, press the active-toggle button — the bar goes blue and the ground station or nav2 takes the mux immediately.
+To hand control over deliberately without unplugging anything, press the active-toggle button — the bar goes blue and the ground station takes the mux immediately.

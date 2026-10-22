@@ -97,7 +97,7 @@ Teleoperation. How sources coexist: [control_sources.md](control_sources.md).
 ---
 
 ## 6a. `rover_drive` (Python)
-The drive command path between the operators and the swerve controller. Used by the onboard joystick, the ground station and Nav2 alike; runs in hardware and in simulation.
+The drive command path between the operators and the swerve controller. Used by the onboard joystick and the ground station alike; runs in hardware and in simulation.
 
 - **`drive_manager_node`** — owns motors, swerve-controller activation, compact mode, and the post-clear-errors inhibit, and publishes them latched on `drive/state`. Each is offered twice: `SetBool` for the ground station's latching switches, `Trigger` on `.../toggle` for the joystick's momentary buttons. `drive/power` does the hardware-component transition and the controller switch as one operation, so no caller has to sequence them.
 

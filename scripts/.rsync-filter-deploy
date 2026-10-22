@@ -4,9 +4,6 @@
 - rover_viz/
 - rover_sim/
 
-# Temporary ignored packages
-- rover_aruco/
-
 # Python & Linting Caches
 - __pycache__/
 - *.pyc

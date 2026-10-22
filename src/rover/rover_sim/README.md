@@ -60,26 +60,3 @@ Legacy/fallback (2025 map):
 ```bash
 ros2 launch rover_sim sim_gz.launch.py map_year:=2025 map_resolution:=high
 ```
-
-## `sim_gz_nav2.launch.py`
-
-Includes `sim_gz.launch.py` (with LiDAR/depth simulation xacro args enabled), then after a 10s delay starts `scan_filter`, SLAM, and Nav2.
-
-All world/map/model/spawn arguments below are forwarded as-is to `sim_gz.launch.py` — leave them empty to use its defaults.
-
-| Argument | Default | Description |
-|---|---|---|
-| `world_name` | *(empty → sim_gz default)* | World to load. |
-| `map_year` | *(empty → sim_gz default)* | `mars_yard` map year. |
-| `map_resolution` | *(empty → sim_gz default)* | `mars_yard` (2025) mesh resolution. |
-| `model_name` | *(empty → sim_gz default)* | Robot model name. |
-| `spawn_x` / `spawn_y` / `spawn_z` | *(empty → sim_gz default)* | Initial spawn coordinates. |
-| `scan_filter_params_file` | *(empty → package default)* | Scan filter params override. |
-| `nav2_params_file` | *(empty → package default)* | Nav2 params override. |
-| `slam_params_file` | *(empty → package default)* | SLAM params override. |
-
-**Example:**
-
-```bash
-ros2 launch rover_sim sim_gz_nav2.launch.py
-```

@@ -8,9 +8,8 @@ must keep matching. This mirrors that rule rather than reading it back off
 twist_mux, which exposes it only through free-text /diagnostics fields, not a
 stable machine-readable one.
 
-No ROS in it, same split as gs_link_watchdog.py and link_state.py, so the
-selection rule is tested without a ROS environment. The clock is injectable
-for the same reason theirs is.
+No ROS in it, so the selection rule is tested without a ROS environment.
+The clock is injectable for the same reason.
 """
 
 import threading
@@ -53,7 +52,7 @@ class DriveSourceWatchdog:
             return max(fresh, key=lambda s: s.priority).name
 
     def autonomous(self) -> Optional[bool]:
-        """True while nav2 is winning, False while a manual source is, None
+        """True while an autonomous source is winning, False while a manual one is, None
         while nothing is currently fresh enough for twist_mux to output."""
         name = self.winner()
         if name is None:
