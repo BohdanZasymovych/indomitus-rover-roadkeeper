@@ -15,7 +15,7 @@
 
     # --- Road ---
     road_width: 3.0                         # [m] width of the simulated road; also the assist's nominal_road_width unless set below
-    lookahead: 0.0                          # [m] measure the road this far ahead of the rover, as a forward camera would; 0 = under it
+    lookahead: 1.5                          # [m] measure the road this far ahead of the rover, as a forward camera would; 0 = under it
     max_visible_offset: 2.0                 # road further than this many half-widths from the rover is out of view: valid = false
     max_visible_heading: 1.047              # [rad] road turned further than this from the rover's heading is out of view (1.047 = 60 deg)
 
@@ -50,12 +50,12 @@
 
     latency:
       enabled: true                         # report the road as it was delay seconds ago, stamped with that time
-      delay: 0.12                           # [s] how old each estimate is; at road_assist's max_road_age (0.3) or more, all go STALE
+      delay: 0.15                           # [s] how old each estimate is; at road_assist's max_road_age (0.3) or more, all go STALE
 
     # --- Confidence ---
     confidence:
       mode: model                           # fixed = always fixed_value (tests steering only); model = product of the factors below
-      fixed_value: 0.8                      # confidence reported in fixed mode (assist engages above confidence_on, full at confidence_full)
+      fixed_value: 0.75                     # confidence reported in fixed mode (assist engages above confidence_on, full at confidence_full)
       lateral: true                         # model: falls from 1 to 0 as the rover goes from 0.7 to 1.3 half-widths off centre
       heading: true                         # model: falls from 1 to 0 as the heading error goes from 0.35 to 0.7 rad
       curvature: true                       # model: falls for curves ahead tighter than R 10 m, reaching 0 at R 4 m
