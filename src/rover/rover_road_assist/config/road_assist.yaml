@@ -11,17 +11,17 @@
 
     # --- Steering law (steering_law.SteeringParams) ---
     nominal_road_width: 3.0           # [m] turns the camera's offset (fraction of half-width) into metres; a gain reference, not measured
-    k_e: 0.3                          # [1/s] how steeply an offset turns into an approach angle toward the centre: higher = pulls back harder
+    k_e: 0.45                         # [1/s] how steeply an offset turns into an approach angle toward the centre: higher = pulls back harder
     v_0: 0.5                          # [m/s] added to speed in the approach angle, so it stays sane when slow: higher = gentler at low speed
     theta_max: 0.35                   # [rad] steepest angle the rover is steered toward the centre line at, however far off it is
-    k_h: 1.2                          # [1/s] yaw rate per rad of (heading error + approach angle); the damping: higher = less overshoot
+    k_h: 1.3                          # [1/s] yaw rate per rad of (heading error + approach angle); the damping: higher = less overshoot
     offset_deadband: 0.1              # offsets within this fraction of the half-width are ignored (0.15 m on a 3 m road)
     heading_deadband: 0.05            # [rad] heading errors within this are ignored, but only while the offset is inside its deadband
     max_yaw_rate: 0.5                 # [rad/s] hard cap on the correction's yaw rate
     max_lateral_accel: 1.0            # [m/s^2] also caps the correction's yaw rate at a_lat / speed, so it gets gentler as speed rises
 
     # --- Blending (assist_state.AssistParams) ---
-    alpha_max: 0.5                    # largest share of the turn the assist ever takes: 0 = operator only, 1 = assist only
+    alpha_max: 0.6                    # largest share of the turn the assist ever takes: 0 = operator only, 1 = assist only
     alpha_rate: 2.0                   # [1/s] how fast that share may change, so the assist never grabs or drops the wheel at once
     min_speed: 0.3                    # [m/s] no correction at or below this forward speed (or reversing); full strength from 2x
     confidence_on: 0.6                # the assist engages once confidence has stayed above this for confidence_on_time...
