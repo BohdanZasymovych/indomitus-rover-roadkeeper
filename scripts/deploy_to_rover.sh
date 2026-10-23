@@ -19,10 +19,10 @@ JETSON_HOTSPOT_IP="10.42.0.1"
 JETSON_ETHERNET_IP="indomitus-rover-computer.local"
 JETSON_IP="${JETSON_HOTSPOT_IP}"
 REMOTE_DIR=""
-IMAGE_NAME="ghcr.io/ucuspacerobotics/indomitus-rover-core"
+IMAGE_NAME="ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper"
 IMAGE_TAG=""
 IMAGE_COMMIT=""
-CONTAINER_NAME="rover_prod"
+CONTAINER_NAME="rover_roadkeeper"
 DOCKERFILE="docker/Dockerfile"
 COMPOSE_FILE="docker/docker-compose.prod.yaml"
 WIFI_SSID="ERC_UCUSpaceRobotics_A"
@@ -58,7 +58,7 @@ Options:
     --eth                       Use wired Ethernet connection (${JETSON_ETHERNET_IP}) instead of hotspot.
     --ip IP                     Jetson IP address (Default: ${JETSON_IP})
     --user USER                 Jetson SSH username (Default: ${JETSON_USER})
-    --dir DIR                   Remote deployment directory on the Jetson. (Default: /home/\${JETSON_USER}/indomitus-rover-core/)
+    --dir DIR                   Remote deployment directory on the Jetson. (Default: /home/\${JETSON_USER}/indomitus-rover-roadkeeper/)
     --image-name NAME           Docker image name (Default: ${IMAGE_NAME})
     --tag TAG                   Docker image tag (e.g., develop-prod, feature-branch-prod).
     --commit SHA                Git commit SHA (7+ hex chars) to pull. Overrides --tag in pull mode.
@@ -117,7 +117,7 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-REMOTE_DIR="${REMOTE_DIR:-/home/${JETSON_USER}/indomitus-rover-core/}"
+REMOTE_DIR="${REMOTE_DIR:-/home/${JETSON_USER}/indomitus-rover-roadkeeper/}"
 
 
 # ==========================================
@@ -329,7 +329,7 @@ resolve_pull_target() {
         PULL_IMAGE_TAG="sha-${SHORT_SHA}-prod"
 
         echo "Resolving commit via GitHub API..."
-        local API_URL="https://api.github.com/repos/ucuspacerobotics/indomitus-rover-core/commits/${SHORT_SHA}"
+        local API_URL="https://api.github.com/repos/ucuspacerobotics/indomitus-rover-roadkeeper/commits/${SHORT_SHA}"
         local FULL_SHA
         FULL_SHA=$(curl -sf "$API_URL" | python3 -c "import sys,json; print(json.load(sys.stdin)['sha'])" 2>/dev/null) \
             || error "Could not resolve SHA '${SHORT_SHA}' via GitHub API. Check your internet connection or that the commit exists."
@@ -399,7 +399,7 @@ Make sure a CI run completed successfully for this tag."
     TEMP_REPO_DIR=$(mktemp -d)
     CLEANUP_FILES+=("$TEMP_REPO_DIR")
 
-    local REPO_URL="https://github.com/ucuspacerobotics/indomitus-rover-core.git"
+    local REPO_URL="https://github.com/ucuspacerobotics/indomitus-rover-roadkeeper.git"
 
     step "Fetching clean source (ref: ${PULL_GIT_REF}) from GitHub..."
     if git clone --depth 1 --branch "$PULL_GIT_REF" "$REPO_URL" "$TEMP_REPO_DIR" > /dev/null 2>&1; then

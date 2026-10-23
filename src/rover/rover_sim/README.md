@@ -70,3 +70,8 @@ ros2 launch rover_sim road_assist_sim_gz.launch.py
 This starts `worlds/dirt_road.sdf` with the simulated front RGB camera enabled.
 The LiDAR, depth camera, and camera IMU are disabled. The RGB image is bridged
 to `/rover/cameras/zed2i/image_raw`.
+
+The launch also starts the road pipeline (`rover_bringup road_pipeline.launch.py`:
+segmentation, deviation and `road_assist_node`). It also opens the Gazebo window and RViz2. Optional arguments: `gui:=false` (headless Gazebo),
+`rviz:=false`, `assist:=true|false`,
+`debug_vis:=false`, `device:=cpu|cuda`.

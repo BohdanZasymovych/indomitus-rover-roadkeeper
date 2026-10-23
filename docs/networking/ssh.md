@@ -214,20 +214,20 @@ Same as `./scripts/enter_container.sh rover [SESSION]`, by hand. Examples use `s
 
 ```bash
 ssh rover                          # on the laptop
-docker ps                          # on the Jetson: rover_prod should be "Up"
-docker exec -it rover_prod bash    # on the Jetson: ROS + workspaces are sourced by .bashrc
+docker ps                          # on the Jetson: rover_roadkeeper should be "Up"
+docker exec -it rover_roadkeeper bash    # on the Jetson: ROS + workspaces are sourced by .bashrc
 
 # additional
 tmux ls                            # in the container: which sessions exist
 tmux new -A -s core                # in the container: enter session core (created if missing)
 ```
 
-- `rover_prod` stopped: `docker start rover_prod`.
-- `rover_prod` missing (after `docker compose down`): `cd ~/indomitus-rover-core && IMAGE_TAG=<tag> docker compose up -d --no-build`
+- `rover_roadkeeper` stopped: `docker start rover_roadkeeper`.
+- `rover_roadkeeper` missing (after `docker compose down`): `cd ~/indomitus-rover-roadkeeper && IMAGE_TAG=<tag> docker compose up -d --no-build`
   - `<tag>` = the deployed image, e.g. `develop-prod` (`docker images`);
   - without `IMAGE_TAG`, compose looks for `local-prod` and starts building the image on the Jetson.
 
-**tmux sessions** (inside `rover_prod`; one session per subsystem: `core`, `arm`, `nav`, … or your own)
+**tmux sessions** (inside `rover_roadkeeper`; one session per subsystem: `core`, `arm`, `nav`, … or your own)
 
 | Action | Command |
 | --- | --- |

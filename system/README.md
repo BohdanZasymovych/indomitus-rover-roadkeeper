@@ -4,7 +4,7 @@ This directory contains configs, services, rulles and other stuff for the NVIDIA
 
 ## Subsystem autostart (`systemd/rover-launch-*.service`)
 
-- Each unit types its `ros2 launch …` into tmux session `core` / `arm` in `rover_prod`, as if typed by hand.
+- Each unit types its `ros2 launch …` into tmux session `core` / `arm` in `rover_roadkeeper`, as if typed by hand.
 - Waits in the background (boot not delayed) for its hardware, then for the container:
   - `core`: CAN `can_rover` up (`Environment=CAN_IFACE=`, = `rover.launch.py` default `interface`);
   - `arm`: CAN `can0` up (= `arm_macro.xacro` default `can_interface`);

@@ -26,7 +26,7 @@ Opens a shell in the local or the rover container.
 
 Commands:
   local   Local dev container (started if needed)
-  rover   rover_prod on the Jetson, over ssh
+  rover   rover_roadkeeper on the Jetson, over ssh
 
 Per command: $0 local -h
              $0 rover -h
@@ -57,7 +57,7 @@ tmux_script() {
 # ===========================================================================
 run_local() {
   # Defaults
-  local CONTAINER_NAME="rover_dev"
+  local CONTAINER_NAME="rover_roadkeeper"
   local COMPOSE_FILE="docker-compose.yaml"
   local ROS_DISTRO="humble"
   local WORKSPACE_DIR="/opt/ws"
@@ -159,7 +159,7 @@ run_rover() {
   local JETSON_ETHERNET_IP="indomitus-rover-computer.local"
   local JETSON_IP="${JETSON_HOTSPOT_IP}"
   local REMOTE_DIR=""
-  local CONTAINER_NAME="rover_prod"
+  local CONTAINER_NAME="rover_roadkeeper"
   local COMPOSE_FILE="docker-compose.prod.yaml"
   local WORKSPACE_DIR="/opt/ws"
   local HARDWARE_WORKSPACE_DIR="/opt/hw_ws"
@@ -174,7 +174,7 @@ run_rover() {
     cat << EOF
 Usage: $0 rover [SESSION] [OPTIONS]
 
-Shell in rover_prod on the Jetson (started if needed).
+Shell in rover_roadkeeper on the Jetson (started if needed).
 
 SESSION            tmux session to attach (core, arm, ...),
                    created if missing. Detach: Ctrl-b d
@@ -189,7 +189,7 @@ Options:
   --user USER      SSH user (${JETSON_USER})
   --ip IP          Jetson IP (${JETSON_IP})
   --dir DIR        Repo dir on the Jetson
-                   (~USER/indomitus-rover-core/)
+                   (~USER/indomitus-rover-roadkeeper/)
   --name NAME      Container (${CONTAINER_NAME})
   --compose FILE   Compose file (${COMPOSE_FILE})
   --workspace DIR  Workspace in container
@@ -223,7 +223,7 @@ EOF
   done
 
   [[ "$READ_ONLY" = false || -n "$SESSION" ]] || error "--read-only needs a SESSION."
-  REMOTE_DIR="${REMOTE_DIR:-/home/${JETSON_USER}/indomitus-rover-core/}"
+  REMOTE_DIR="${REMOTE_DIR:-/home/${JETSON_USER}/indomitus-rover-roadkeeper/}"
 
   local TARGET="${JETSON_USER}@${JETSON_IP}"
   local REMOTE_COMPOSE_FILE="$(basename "${COMPOSE_FILE}")"

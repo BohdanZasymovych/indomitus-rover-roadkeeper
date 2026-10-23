@@ -21,7 +21,7 @@ Automatically configures and brings up `can0` when the CAN adapter is detected.
 
 ### Container autostart
 
-- `rover_prod` comes back at boot via `restart: unless-stopped` in [`docker-compose.prod.yaml`](../../docker/docker-compose.prod.yaml) (not after `docker compose down`).
+- `rover_roadkeeper` comes back at boot via `restart: unless-stopped` in [`docker-compose.prod.yaml`](../../docker/docker-compose.prod.yaml) (not after `docker compose down`).
 - Launches: [`system/systemd/rover-launch-*.service`](../../system/README.md).
 
 ## Manual / Laptop Setup

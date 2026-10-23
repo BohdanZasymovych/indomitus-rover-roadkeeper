@@ -6,10 +6,10 @@ This document provides a quick introduction on how to start the rover. For furth
 
 Follow these steps to power on and operate the rover:
 
-> **Note:** All commands below need to be run from the root of the `indomitus-rover-core` repository. If you haven't already, clone the repository to your laptop:
+> **Note:** All commands below need to be run from the root of the `indomitus-rover-roadkeeper` repository. If you haven't already, clone the repository to your laptop:
 > ```bash
-> git clone git@github.com:UCUSpaceRobotics/indomitus-rover-core.git
-> cd indomitus-rover-core
+> git clone git@github.com:UCUSpaceRobotics/indomitus-rover-roadkeeper.git
+> cd indomitus-rover-roadkeeper
 > ```
 
 1. **Power on the rover:** Rotate the blue switch on the back of the rover clockwise, then press the blue button. When the rover is powered on, the CAN interface is automatically set up, the Docker container starts, and the Wi-Fi hotspot is turned on (**note that it takes ~1 minute for the network to appear**).
@@ -28,7 +28,7 @@ Follow these steps to power on and operate the rover:
 
    > Tip: `./scripts/enter_container.sh rover core` opens a tmux session instead - the launch survives a dropped connection; detach with `Ctrl-b d`. See [enter_container.md](docs/scripts/enter_container.md#tmux-sessions-on-the-rover).
 
-   > **⚠️ Important:** Open a new terminal on your laptop for all subsequent steps, and ensure you navigate back to the root of the `indomitus-rover-core` repository.
+   > **⚠️ Important:** Open a new terminal on your laptop for all subsequent steps, and ensure you navigate back to the root of the `indomitus-rover-roadkeeper` repository.
 
 5. **Pull the latest code:** Run the following command to switch to the `develop` branch and pull the latest changes from it:
    ```bash
@@ -37,7 +37,7 @@ Follow these steps to power on and operate the rover:
 
 6. **Pull the Docker image for the laptop from GitHub:** Run the following command to pull the image from GitHub to the laptop:
    ```bash
-   docker pull ghcr.io/ucuspacerobotics/indomitus-rover-core:develop-dev
+   docker pull ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper:develop-dev
    ```
 
    > **Note:** This step only needs to be done once. If you already have the image, you can skip it.
@@ -56,7 +56,7 @@ Follow these steps to power on and operate the rover:
 
 9. **Enter the container terminal:** Run the following command to enter the container terminal on the laptop:
    ```bash
-   docker exec -it rover_dev /bin/bash
+   docker exec -it rover_roadkeeper /bin/bash
    ```
 
 10. **Build and source the workspace:** Run the following command in the container terminal to build and source the workspace:

@@ -4,11 +4,14 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     AppendEnvironmentVariable,
+    DeclareLaunchArgument,
     GroupAction,
     IncludeLaunchDescription,
     TimerAction,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node, PushRosNamespace
 
 from rover_bringup.launch_utils import include_launch
@@ -24,7 +27,7 @@ CONTROLLERS = [
 
 
 def generate_launch_description() -> LaunchDescription:
-    """Run the dirt road world with only the forward RGB camera simulated."""
+    """Run the dirt road world with the forward RGB camera simulated, plus the road pipeline."""
     rover_sim_share = get_package_share_directory("rover_sim")
     rover_description_share = get_package_share_directory("rover_description")
     zed_description_share = get_package_share_directory("zed_description")
@@ -42,7 +45,11 @@ def generate_launch_description() -> LaunchDescription:
             )
         ),
         launch_arguments={
-            "gz_args": ["-v 4 -s -r ", world_file],
+            "gz_args": [
+                # -s runs the server only, so no Gazebo window opens.
+                PythonExpression(["'-v 4 -r ' if '", LaunchConfiguration("gui"), "' == 'true' else '-v 4 -s -r '"]),
+                world_file,
+            ],
             "on_exit_shutdown": "True",
         }.items(),
     )
@@ -97,6 +104,27 @@ def generate_launch_description() -> LaunchDescription:
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument(
+            "gui", default_value="false", choices=["true", "false"],
+            description="Open the Gazebo window (false: headless server only)",
+        ),
+        DeclareLaunchArgument(
+            "rviz", default_value="false", choices=["true", "false"],
+            description="Open RViz2 with the rover model",
+        ),
+        DeclareLaunchArgument(
+            "assist", default_value="",
+            choices=["", "true", "false"],
+            description="Start with the correction on or off; '' leaves it to road_assist.yaml",
+        ),
+        DeclareLaunchArgument(
+            "debug_vis", default_value="true", choices=["true", "false"],
+            description="Publish the road overlay on road_segmentation_node/debug_overlay",
+        ),
+        DeclareLaunchArgument(
+            "device", default_value="",
+            description="Segmentation device: auto | cuda | cpu; '' = road_segmentation.yaml",
+        ),
         AppendEnvironmentVariable(
             name="GZ_SIM_RESOURCE_PATH",
             value=(
@@ -143,4 +171,17 @@ def generate_launch_description() -> LaunchDescription:
                 "controller_name": "swerve_controller_test",
             }),
         ]),
+        include_launch("rover_viz", "rviz.launch.py", {
+            "use_sim": "true",
+            "rover_namespace": ROVER_NAMESPACE,
+        }, condition=IfCondition(LaunchConfiguration("rviz"))),
+        # Reads the simulated /rover/cameras/zed2i/image_raw from the bridge above.
+        include_launch("rover_bringup", "road_pipeline.launch.py", {
+            "rover_namespace": ROVER_NAMESPACE,
+            "use_cameras": "false",
+            "use_sim_time": "true",
+            "assist": LaunchConfiguration("assist"),
+            "debug_vis": LaunchConfiguration("debug_vis"),
+            "device": LaunchConfiguration("device"),
+        }),
     ])

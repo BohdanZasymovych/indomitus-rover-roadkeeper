@@ -1,7 +1,7 @@
 # Runs this repo's container ON THE GROUND STATION laptop, not on the rover.
 
 services:
-  rover_dev:
+  rover_roadkeeper:
     platform: linux/amd64
     build:
       context: .
@@ -13,12 +13,12 @@ services:
         UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
         TARGET_ROS_DISTRO: ${TARGET_ROS_DISTRO:-humble}
 
-    image: ${IMAGE_NAME:-ghcr.io/ucuspacerobotics/indomitus-rover-core}:${IMAGE_TAG:-local-dev}
+    image: ${IMAGE_NAME:-ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper}:${IMAGE_TAG:-local-dev}
     pull_policy: never
     # Same name and service as the other templates on purpose: they are
     # alternatives, one per device, and `docker compose up` on whichever one is
     # copied to the root simply replaces the container.
-    container_name: rover_dev
+    container_name: rover_roadkeeper
     # A missing profile does not stop Fast DDS - it falls back to multicast,
     # which cannot reach a rover behind the mast Pi, and every symptom then
     # points at the network. Check it here instead, while the cause is obvious.
