@@ -59,6 +59,16 @@ Legacy/fallback (2025 map):
 ros2 launch rover_sim sim_gz.launch.py map_year:=2025 map_resolution:=high
 ```
 
+## DefTech camera-only simulation
+
+```bash
+ros2 launch rover_sim deftech.launch.py
+```
+
+This starts `worlds/deftech.world` with the simulated front RGB camera enabled.
+The LiDAR, depth camera, and camera IMU are disabled. The RGB image is bridged
+to `/rover/zed2i/rgb/image_rect_color`.
+
 ## `sim_gz_nav2.launch.py`
 
 Includes `sim_gz.launch.py` (with LiDAR/depth simulation xacro args enabled), then after a 10s delay starts `scan_filter`, SLAM, and Nav2.
