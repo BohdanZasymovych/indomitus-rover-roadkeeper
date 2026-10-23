@@ -437,6 +437,12 @@ def generate_launch_description() -> LaunchDescription:
                 "use_sim_time": "true",
                 "extra_params_file": LaunchConfiguration("road_assist_params_file"),
             }),
+
+            # Drives on cmd_vel_ext while cmd_vel_remote_raw is silent.
+            include_launch("rover_link_guard", "link_guard.launch.py", {
+                "rover_namespace": "",
+                "use_sim_time": "true",
+            }),
         ]),
 
         # Trigger folder cleanup safely upon launch termination

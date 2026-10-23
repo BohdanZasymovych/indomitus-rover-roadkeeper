@@ -1,0 +1,52 @@
+/**/link_guard_node:
+  ros__parameters:
+    # --- Topics ---
+    cmd_vel_in: cmd_vel_remote_raw    # operator's command in; its silence is what counts as link loss
+    cmd_vel_out: cmd_vel_ext          # fallback command out; twist_mux's lowest priority, so the operator always wins it back
+    odom_topic: odom                  # EKF output (rover_localization); the trail is recorded from it
+    rate: 20.0                        # [Hz] how often the link is judged and the fallback commands
+    retreat: reverse                  # reverse = back up the trail; turn_around = turn on the spot, then drive it forward
+
+    # --- Link (link_monitor.LinkParams) ---
+    lost_after: 1.0                   # [s] silence longer than this declares the link lost; keep above command_gap
+    restore_after: 1.0                # [s] commands must keep arriving this long for the link to count as back
+    command_gap: 0.5                  # [s] a pause longer than this breaks that run; keep equal to cmd_vel_remote's twist_mux timeout
+
+    # --- Continue (fallback.FallbackParams) ---
+    continue_speed: 0.5               # [m/s] speed while continuing along the road, capped by the speed the operator had
+    min_continue_speed: 0.2           # [m/s] slower than this when the link dropped = standing still on purpose: stay put
+    continue_time: 15.0               # [s] longest continue before retreating
+    continue_distance: 6.0            # [m] furthest continue before retreating
+    road_min_confidence: 0.5          # road estimates less confident than this are not steered by
+    road_max_age: 0.3                 # [s] road estimates older than this are ignored
+    road_lost_grace: 2.0              # [s] continue goes straight on this long without a trusted road, then retreats
+
+    # --- Retreat ---
+    retreat_speed: 0.4                # [m/s]
+    retreat_distance: 5.0             # [m] how far back before the point of loss to go (the link was marginal there)
+    lookahead: 1.5                    # [m] pure pursuit looks this far down the trail
+    reach_radius: 0.5                 # [m] a trail point this close has been reached
+    turn_rate: 0.5                    # [rad/s] turn_around only
+    turn_gain: 1.5                    # [1/s] turn rate per rad of heading error
+    turn_tolerance: 0.2               # [rad] the turn is done within this of the way back
+
+    # --- Limits ---
+    max_yaw_rate: 0.5                 # [rad/s] hard cap on any yaw rate commanded
+    max_accel: 0.5                    # [m/s^2] how fast speed may build up
+    max_decel: 1.0                    # [m/s^2] how fast it may fall
+    max_duration: 120.0               # [s] longest the whole episode may last before stopping for good
+    pose_max_age: 0.5                 # [s] odometry older than this stops the rover until it is fresh
+
+    # --- Trail ---
+    trail_spacing: 0.25               # [m] distance between recorded points
+    trail_max_points: 4000.0          # the oldest are forgotten past this (1 km at the spacing above)
+
+    # --- Steering while continuing (steering_law.SteeringParams); keep in step with road_assist.yaml ---
+    nominal_road_width: 3.0
+    k_e: 1.0
+    v_0: 0.5
+    theta_max: 0.45
+    k_h: 2.25
+    offset_deadband: 0.07
+    heading_deadband: 0.05
+    max_lateral_accel: 1.0

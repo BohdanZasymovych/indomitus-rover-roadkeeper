@@ -29,6 +29,7 @@
   <exec_depend>rover_bringup</exec_depend>
   <exec_depend>rover_drive</exec_depend>
   <exec_depend>rover_road_assist</exec_depend>
+  <exec_depend>rover_link_guard</exec_depend>
   <exec_depend>rover_description</exec_depend>
   <exec_depend>rover_localization</exec_depend>
   

@@ -110,6 +110,12 @@ def generate_launch_description():
                 'rover_namespace': '',   # already pushed by this group
             }),
 
+            # Drives on cmd_vel_ext (lowest priority) while cmd_vel_remote_raw is
+            # silent; the operator takes over just by driving again.
+            include_launch('rover_link_guard', 'link_guard.launch.py', {
+                'rover_namespace': '',   # already pushed by this group
+            }),
+
             include_launch('rover_drive', 'drive_manager.launch.py'),
 
             include_launch('rover_diagnostics', 'fault_logger.launch.py'),
