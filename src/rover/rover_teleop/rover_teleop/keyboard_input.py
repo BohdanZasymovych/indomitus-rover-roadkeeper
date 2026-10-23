@@ -61,6 +61,7 @@ FUNCTIONS = {
     'clear_errors_button': 'clear motor errors',
     'dataset_capture_button': 'dataset: save one frame',
     'dataset_record_button': 'dataset: record on/off',
+    'road_assist_button': 'road assist on/off',
 }
 
 _HELP_HEAD = """\

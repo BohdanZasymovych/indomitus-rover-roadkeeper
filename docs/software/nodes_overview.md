@@ -89,15 +89,15 @@ URDF/xacro robot description files and 3D meshes. Sim/real-agnostic — differen
 ## 6. `rover_teleop` (Python)
 Teleoperation. How sources coexist: [control_sources.md](control_sources.md).
 
-- **`gamepad_interpreter_node`** — `Joy` → `Twist` (`cmd_vel_joy` or `cmd_vel_remote`); buttons are `Trigger` requests to `drive_manager_node` / lights; paints the light bar from `drive/state`; on stale `/joy` sends a few zeros, then goes quiet.
-- **`keyboard_teleop_node`** — laptop keyboard, `ros2 run` only (reads its own terminal); feeds a second interpreter → `cmd_vel_remote`. Keys: `config/keyboard.yaml`.
+- **`gamepad_interpreter_node`** — `Joy` → `Twist` (`cmd_vel_joy` or `cmd_vel_remote_raw`); buttons are `Trigger` requests to `drive_manager_node` / lights; paints the light bar from `drive/state`; on stale `/joy` sends a few zeros, then goes quiet.
+- **`keyboard_teleop_node`** — laptop keyboard, `ros2 run` only (reads its own terminal); feeds a second interpreter → `cmd_vel_remote_raw`. Keys: `config/keyboard.yaml`.
 - `launch/gamepad.launch.py` — `source:=remote` (default, laptop: `/rover/remote/joy`) or `source:=rover` (wired: `/rover/joy`, from `rover.launch.py`).
 - `config/gamepad.yaml` — button layout, the only place a function gets a button (`-1` = off; dataset buttons off).
 
 ---
 
 ## 6a. `rover_drive` (Python)
-The drive command path between the operators and the swerve controller. Used by the onboard joystick, the ground station and Nav2 alike; runs in hardware and in simulation.
+The drive command path between the operators and the swerve controller. Used by the onboard joystick and the ground station alike; runs in hardware and in simulation.
 
 - **`drive_manager_node`** — owns motors, swerve-controller activation, compact mode, and the post-clear-errors inhibit, and publishes them latched on `drive/state`. Each is offered twice: `SetBool` for the ground station's latching switches, `Trigger` on `.../toggle` for the joystick's momentary buttons. `drive/power` does the hardware-component transition and the controller switch as one operation, so no caller has to sequence them.
 

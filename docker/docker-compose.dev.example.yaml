@@ -22,7 +22,6 @@ services:
       - NET_RAW
     device_cgroup_rules:
       - "c 13:* rmw"
-      # - 'c 81:* rmw' # FOR aruco_debug.launch.py
     stdin_open: true
     tty: true
     healthcheck:

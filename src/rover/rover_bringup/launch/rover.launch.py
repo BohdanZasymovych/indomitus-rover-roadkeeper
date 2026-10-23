@@ -1,33 +1,13 @@
 import os
-from ament_index_python.packages import (
-    PackageNotFoundError, get_package_share_directory
-)
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, LogInfo
+from launch.actions import DeclareLaunchArgument, GroupAction
 from launch.conditions import IfCondition
 from launch.substitutions import (
     EnvironmentVariable, LaunchConfiguration, Command, NotEqualsSubstitution
 )
 from launch_ros.actions import PushRosNamespace
 from rover_bringup.launch_utils import include_launch
-
-
-def _lora_fallback():
-    """Include the LoRa fallback link, or log why it is missing.
-
-    include_launch() resolves the package share directory while the launch
-    description is being built, so a rover_comms that is not built raises and
-    takes the whole of bringup down with it. A backup command path must never
-    be the reason the rover refuses to start - the same reason the node itself
-    opens its serial port in a worker thread rather than in its constructor.
-    """
-    try:
-        get_package_share_directory('rover_comms')
-    except PackageNotFoundError:
-        return LogInfo(msg='rover_comms is not built - starting without the '
-                           'LoRa fallback. The rover has no backup command '
-                           'path if Wi-Fi drops.')
-    return include_launch('rover_comms', 'lora.launch.py')
 
 
 def generate_launch_description():
@@ -50,12 +30,18 @@ def generate_launch_description():
         'use_joy', default_value='true',
         description='Wired gamepad plugged into the rover itself (cmd_vel_joy, '
                     'top twist_mux priority) - separate from the ground '
-                    'station (cmd_vel_gs) and operator laptops (cmd_vel_remote)',
+                    'station (cmd_vel_gs) and operator laptops (cmd_vel_remote_raw, '
+                    'through road_assist_node to cmd_vel_remote)',
     )
 
     joy_dev_arg = DeclareLaunchArgument(
         'joy_dev', default_value='/dev/input/js0',
         description='Device path for the rover-side gamepad; only used when use_joy:=true',
+    )
+
+    use_cameras_arg = DeclareLaunchArgument(
+        'use_cameras', default_value='true',
+        description='rover_cameras: MJPEG streams to the ground station + image_raw topics',
     )
 
     zed2i_mode_arg = DeclareLaunchArgument(
@@ -81,6 +67,7 @@ def generate_launch_description():
         interface_arg,
         use_joy_arg,
         joy_dev_arg,
+        use_cameras_arg,
         zed2i_mode_arg,
 
         GroupAction([
@@ -94,6 +81,12 @@ def generate_launch_description():
                     'joy_dev': LaunchConfiguration('joy_dev'),
                 }),
             ], condition=IfCondition(LaunchConfiguration('use_joy'))),
+
+            GroupAction([
+                include_launch('rover_cameras', 'cameras.launch.py', {
+                    'rover_namespace': '',   # already pushed by this group
+                }),
+            ], condition=IfCondition(LaunchConfiguration('use_cameras'))),
 
             include_launch('rover_bringup', 'can.launch.py', {
                 'interface': LaunchConfiguration('interface'),
@@ -122,15 +115,18 @@ def generate_launch_description():
 
             include_launch('rover_drive', 'twist_mux.launch.py'),
 
-            include_launch('rover_drive', 'drive_manager.launch.py'),
+            # Between laptop teleop (cmd_vel_remote_raw) and twist_mux
+            # (cmd_vel_remote): laptops cannot drive without it, even with the
+            # assist off.
+            include_launch('rover_road_assist', 'road_assist.launch.py', {
+                'rover_namespace': '',   # already pushed by this group
+            }),
 
-            _lora_fallback(), # Publishes cmd_vel_lora, which twist_mux carries below cmd_vel_ext.
+            include_launch('rover_drive', 'drive_manager.launch.py'),
 
             include_launch('rover_diagnostics', 'fault_logger.launch.py'),
 
             include_launch('rover_peripherals', 'lighting.launch.py'),
-
-            include_launch('rover_comms', 'gs_link_lamp.launch.py'),  # Drives lights/traffic_blue off /gs/link/state.
 
             include_launch('rover_drive', 'drive_source_lamp.launch.py'),  # red=autonomous, green=manual, off=nothing driving.
 

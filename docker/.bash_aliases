@@ -11,8 +11,6 @@ alias te="ros2 topic echo"
 
 alias launch_rover="ros2 launch rover_bringup rover.launch.py"
 alias launch_gamepad="ros2 launch rover_teleop gamepad.launch.py"
-alias launch_navigation="ros2 launch rover_bringup navigation.launch.py"
-alias launch_nav="ros2 launch rover_bringup navigation.launch.py"
 
 
 # Prints PIDs of live (non-zombie) processes whose command line matches the ERE in $1

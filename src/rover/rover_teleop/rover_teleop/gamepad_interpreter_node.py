@@ -138,6 +138,7 @@ class GamepadInterpreterNode(Node):
                 'lights/beautiful/toggle',
                 'cameras/capture',
                 'cameras/record/toggle',
+                'road_assist/toggle',
             )
         }
 
@@ -170,6 +171,7 @@ class GamepadInterpreterNode(Node):
             'clear_errors_button': lambda: self._request('drive/clear_errors'),
             'dataset_capture_button': lambda: self._request('cameras/capture'),
             'dataset_record_button': lambda: self._request('cameras/record/toggle'),
+            'road_assist_button': lambda: self._request('road_assist/toggle'),
         }
         layout = {name: int(declare_and_get(name, DISABLED)) for name in bindings}
         self._toggles = [ButtonToggle(layout[name], on_press)

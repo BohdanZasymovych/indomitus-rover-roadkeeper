@@ -17,17 +17,7 @@
         timeout: 0.5
         priority: 30
 
-      nav2:
-        topic:   "cmd_vel_nav"
-        timeout: 1.0
-        priority: 20
-
       external:
         topic:   "cmd_vel_ext"
         timeout: 0.5
         priority: 10
-
-      lora:
-        topic:   "cmd_vel_lora"
-        timeout: 1.0
-        priority: 5

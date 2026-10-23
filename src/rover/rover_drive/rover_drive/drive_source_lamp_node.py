@@ -2,14 +2,14 @@
 """Lights the tower red for autonomous, green for manual drive.
 
 Watches the same command topics twist_mux does (cmd_vel_joy, cmd_vel_gs,
-cmd_vel_remote, cmd_vel_nav, cmd_vel_ext, cmd_vel_lora) and picks the same winner it would,
+cmd_vel_remote, cmd_vel_ext) and picks the same winner it would,
 using the priorities/timeouts mirrored from rover_drive/config/twist_mux.yaml
 in DriveSourceWatchdog - see that module for why this reimplements the rule
 rather than reading it back off twist_mux's /diagnostics.
 
 Drives lights/traffic_light (indomitus_interfaces/srv/SetTrafficLight),
 setting red/green and leaving blue at KEEP so this never disturbs
-gs_link_lamp_node's blue-on-GS-connection lamp.
+whoever else owns the blue lamp.
 """
 
 import rclpy
@@ -23,15 +23,12 @@ from rover_drive.drive_source_watchdog import DriveSourceWatchdog, Source
 from rover_drive.service_call import GuardedCall
 
 # Mirrors rover_drive/config/twist_mux.yaml. Keep both in sync by hand -
-# there is nothing at runtime enforcing the match, same contract as the LoRa
-# wire scale between lora_rover_node and lora_gateway_node.
+# there is nothing at runtime enforcing the match.
 DEFAULT_SOURCES = (
     Source('cmd_vel_joy', priority=100, timeout=0.5, autonomous=False),
     Source('cmd_vel_gs', priority=50, timeout=0.5, autonomous=False),
     Source('cmd_vel_remote', priority=30, timeout=0.5, autonomous=False),
-    Source('cmd_vel_nav', priority=20, timeout=1.0, autonomous=True),
     Source('cmd_vel_ext', priority=10, timeout=0.5, autonomous=False),
-    Source('cmd_vel_lora', priority=5, timeout=1.0, autonomous=False),
 )
 
 KEEP = SetTrafficLight.Request.KEEP

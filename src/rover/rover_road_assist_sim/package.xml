@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rover_road_assist_sim</name>
+  <version>0.0.0</version>
+  <description>
+    Gazebo test bench for rover_road_assist: a generated road and fake road perception
+    computed from the ground-truth pose. Simulation only - never part of the rover bringup.
+  </description>
+  <maintainer email="bohdan.zasymovych@gmail.com">bohdan</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
+  <depend>indomitus_interfaces</depend>
+
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>rover_bringup</exec_depend>
+  <exec_depend>rover_sim</exec_depend>
+  <exec_depend>rover_road_assist</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <!-- rover_road_assist (exec_depend above) is also what test_closed_loop
+       drives through the fake camera -->
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
