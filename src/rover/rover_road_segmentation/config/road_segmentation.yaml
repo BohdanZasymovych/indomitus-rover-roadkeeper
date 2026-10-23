@@ -1,7 +1,7 @@
 /**/road_segmentation_node:
   ros__parameters:
     # --- Topics (must match rover_road_assist) ---
-    image_topic: /rover/cameras/arducam_front_bottom/image_raw   # rover_cameras: <ns>/cameras/<name>/image_raw, rgb8, reliable depth 1
+    image_topic: /rover/cameras/zed2i/image_raw                  # rover_cameras: <ns>/cameras/<name>/image_raw, rgb8, reliable depth 1
     mask_topic: /rover/perception/road_mask                      # road_deviation_node's mask_topic default; mono8, 0 = no road, 1 = road
 
     # --- Model ---
