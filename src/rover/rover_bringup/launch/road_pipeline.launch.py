@@ -10,7 +10,8 @@ use_cameras:=false use_assist:=false, to go beside it; with everything on, to
 go without it (the drive stack is then not running, so nothing moves).
 
     ros2 launch rover_bringup road_pipeline.launch.py
-    ros2 launch rover_bringup road_pipeline.launch.py cameras:=arducam-front-bottom assist:=true
+    ros2 launch rover_bringup road_pipeline.launch.py cameras:=arducam-front-bottom \
+        image_topic:=/rover/cameras/arducam_front_bottom/image_raw assist:=true
     ros2 launch rover_bringup road_pipeline.launch.py use_cameras:=false use_assist:=false
 """
 from launch import LaunchDescription
@@ -35,9 +36,14 @@ def generate_launch_description():
             description='Start rover_cameras (false: another launch already does)',
         ),
         DeclareLaunchArgument(
-            'cameras', default_value='arducam-front-bottom',
-            description="rover_cameras names to start, comma-separated; the one road_segmentation.yaml's "
-                        "image_topic reads must be among them ('' = all with autostart)",
+            'cameras', default_value='zed2i',
+            description="rover_cameras names to start, comma-separated; must include the one image_topic reads "
+                        "('' = all with autostart)",
+        ),
+        DeclareLaunchArgument(
+            'image_topic', default_value='',
+            description="Camera Image topic the segmenter reads; '' = road_segmentation.yaml "
+                        "(/rover/cameras/zed2i/image_raw), which `cameras` must then start",
         ),
         DeclareLaunchArgument(
             'use_perception', default_value='true', choices=['true', 'false'],
@@ -74,6 +80,7 @@ def generate_launch_description():
             GroupAction([
                 include_launch('rover_road_segmentation', 'road_segmentation.launch.py', {
                     'rover_namespace': '',
+                    'image_topic': LaunchConfiguration('image_topic'),
                     'device': LaunchConfiguration('device'),
                     'debug_vis': LaunchConfiguration('debug_vis'),
                 }),
