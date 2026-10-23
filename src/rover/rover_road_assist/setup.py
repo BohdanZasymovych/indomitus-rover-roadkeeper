@@ -31,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             f'road_assist_node = {package_name}.road_assist_node:main',
+            f'road_deviation_node = {package_name}.road_deviation_node:main',
         ],
     },
 )
