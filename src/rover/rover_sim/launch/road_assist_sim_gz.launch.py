@@ -24,12 +24,12 @@ CONTROLLERS = [
 
 
 def generate_launch_description() -> LaunchDescription:
-    """Run the DefTech world with only the forward RGB camera simulated."""
+    """Run the dirt road world with only the forward RGB camera simulated."""
     rover_sim_share = get_package_share_directory("rover_sim")
     rover_description_share = get_package_share_directory("rover_description")
     zed_description_share = get_package_share_directory("zed_description")
 
-    world_file = os.path.join(rover_sim_share, "worlds", "deftech.sdf")
+    world_file = os.path.join(rover_sim_share, "worlds", "dirt_road.sdf")
     controllers_yaml = os.path.join(rover_sim_share, "config", "controllers.yaml")
     bridge_yaml = os.path.join(rover_sim_share, "config", "bridge_gz.yaml")
 

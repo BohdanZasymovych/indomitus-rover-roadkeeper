@@ -13,6 +13,10 @@ go without it (the drive stack is then not running, so nothing moves).
     ros2 launch rover_bringup road_pipeline.launch.py cameras:=arducam-front-bottom \
         image_topic:=/rover/cameras/arducam_front_bottom/image_raw assist:=true
     ros2 launch rover_bringup road_pipeline.launch.py use_cameras:=false use_assist:=false
+
+With rover_sim's road_assist_sim_gz.launch.py (simulated ZED RGB camera, no road_assist_node):
+    ros2 launch rover_bringup road_pipeline.launch.py use_cameras:=false use_sim_time:=true \\
+        image_topic:=/rover/zed2i/rgb/image_rect_color
 """
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction
@@ -58,6 +62,10 @@ def generate_launch_description():
             description='Publish the road overlay on road_segmentation_node/debug_overlay',
         ),
         DeclareLaunchArgument(
+            'use_sim_time', default_value='false', choices=['true', 'false'],
+            description='Use /clock: for the Gazebo sims, whose image stamps are simulation time',
+        ),
+        DeclareLaunchArgument(
             'use_assist', default_value='true', choices=['true', 'false'],
             description='Start road_assist_node (false: another launch already does)',
         ),
@@ -83,6 +91,7 @@ def generate_launch_description():
                     'image_topic': LaunchConfiguration('image_topic'),
                     'device': LaunchConfiguration('device'),
                     'debug_vis': LaunchConfiguration('debug_vis'),
+                    'use_sim_time': LaunchConfiguration('use_sim_time'),
                 }),
             ], condition=IfCondition(LaunchConfiguration('use_perception'))),
 
@@ -90,6 +99,7 @@ def generate_launch_description():
                 include_launch('rover_road_assist', 'road_assist.launch.py', {
                     'rover_namespace': '',
                     'assist': LaunchConfiguration('assist'),
+                    'use_sim_time': LaunchConfiguration('use_sim_time'),
                 }),
             ], condition=IfCondition(LaunchConfiguration('use_assist'))),
         ]),

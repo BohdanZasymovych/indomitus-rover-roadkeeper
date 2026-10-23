@@ -64,9 +64,9 @@ ros2 launch rover_sim sim_gz.launch.py map_year:=2025 map_resolution:=high
 ## Camera-only simulation
 
 ```bash
-ros2 launch rover_sim deftech.launch.py
+ros2 launch rover_sim road_assist_sim_gz.launch.py
 ```
 
-This starts `worlds/deftech.world` with the simulated front RGB camera enabled.
+This starts `worlds/dirt_road.sdf` with the simulated front RGB camera enabled.
 The LiDAR, depth camera, and camera IMU are disabled. The RGB image is bridged
 to `/rover/zed2i/rgb/image_rect_color`.
