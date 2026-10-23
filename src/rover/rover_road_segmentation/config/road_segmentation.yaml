@@ -10,7 +10,7 @@
     use_fp16: true            # autocast on CUDA only
 
     # --- Post-processing (runtime-changeable with ros2 param set) ---
-    prob_threshold: 0.85          # road only if p(road) > this; higher = fewer false positives in the field
+    prob_threshold: 0.93          # road only if p(road) > this; higher = fewer false positives in the field
     temporal_alpha: 0.60          # weight of current frame in EMA smoothing: p_hat = alpha*p + (1-alpha)*p_prev
     mask_hud: true                # the bottom-left HUD box (95x35 px at 720x364, scaled) is never road
     morph_kernel_ref: 7           # [px at 364 rows, scaled to the frame] light open filter; 0 = off
