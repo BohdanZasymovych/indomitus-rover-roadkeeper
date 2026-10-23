@@ -1,7 +1,7 @@
 # Drone detection models
 
 Single class `0: waiter_fpv_drone`: an FPV drone sitting on or beside the road, waiting for a vehicle.
-Trained with Ultralytics 8.4.183 at imgsz 640 (Colab, `storozha/runs`, data commit `20e0cf6`). Stored with Git LFS,
+Trained with Ultralytics 8.4.183 at imgsz 640 (Colab, `detect-drones-models/runs`, data commit `20e0cf6`). Stored with Git LFS,
 so run `git lfs pull` after cloning.
 
 | file | source run | params | best val mAP50 / recall | CPU 640x360 (M-series) |

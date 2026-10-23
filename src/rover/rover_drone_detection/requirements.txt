@@ -1,4 +1,5 @@
-# ultralytics has no rosdep key; install on top of the ROS image:
+# ultralytics has no rosdep key; the Docker image installs it on top of torch
+# (docker/Dockerfile, base stage). Outside Docker:
 #   pip3 install -r src/rover/rover_drone_detection/requirements.txt
 # On a Jetson install the JetPack torch/torchvision wheels first, then this.
 ultralytics==8.4.183

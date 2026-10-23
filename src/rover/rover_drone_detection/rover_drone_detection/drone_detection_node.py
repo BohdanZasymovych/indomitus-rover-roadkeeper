@@ -20,6 +20,7 @@ The logic lives in threat, geometry, draw and sighting_log; this file is only
 the ROS side of it.
 """
 
+import array
 import math
 import os
 import time
@@ -27,7 +28,6 @@ from dataclasses import fields
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from cv_bridge import CvBridge, CvBridgeError
 from rcl_interfaces.msg import ParameterDescriptor
 from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
@@ -43,6 +43,7 @@ from indomitus_interfaces.msg import DroneThreat
 from rover_drone_detection import geometry
 from rover_drone_detection.detector import Detector, resolve_model_path
 from rover_drone_detection.draw import annotate
+from rover_drone_detection.image_msg import bgr_fields, to_bgr
 from rover_drone_detection.sighting_log import SightingLog
 from rover_drone_detection.threat import Level, ThreatParams, ThreatTracker
 
@@ -83,7 +84,6 @@ class DroneDetectionNode(Node):
 
         self.tracker = ThreatTracker(self.threat_params)
         self.log = SightingLog(log_dir, log_interval) if log_enabled else None
-        self.bridge = CvBridge()
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
@@ -137,8 +137,8 @@ class DroneDetectionNode(Node):
         if msg is None:
             return
         try:
-            bgr = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
-        except CvBridgeError as exc:
+            bgr = to_bgr(msg)
+        except ValueError as exc:
             self.get_logger().warn(f'cannot convert {msg.encoding} image: {exc}',
                                    throttle_duration_sec=5.0)
             return
@@ -161,8 +161,9 @@ class DroneDetectionNode(Node):
         if self.image_pub.get_subscription_count() > 0 or log_due:
             annotated = annotate(bgr, dets, state, self.threat_params, self.draw_path_zone)
         if annotated is not None and self.image_pub.get_subscription_count() > 0:
-            out = self.bridge.cv2_to_imgmsg(annotated, 'bgr8')
-            out.header = msg.header
+            out = Image(header=msg.header, encoding='bgr8')
+            out.height, out.width, out.step, data = bgr_fields(annotated)
+            out.data = array.array('B', data)
             self.image_pub.publish(out)
 
         if state.level != self._level:
