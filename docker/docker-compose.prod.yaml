@@ -12,7 +12,7 @@ services:
         UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
         TARGET_ROS_DISTRO: ${TARGET_ROS_DISTRO:-humble}
 
-    image: ${IMAGE_NAME:-ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper}:${IMAGE_TAG:-local-prod}
+    image: ${IMAGE_NAME:-ghcr.io/bohdanzasymovych/indomitus-rover-roadkeeper}:${IMAGE_TAG:-local-prod}
     pull_policy: never
     container_name: rover_roadkeeper
     command: tail -f /dev/null # command: autolaunch

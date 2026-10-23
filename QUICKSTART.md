@@ -37,7 +37,7 @@ Follow these steps to power on and operate the rover:
 
 6. **Pull the Docker image for the laptop from GitHub:** Run the following command to pull the image from GitHub to the laptop:
    ```bash
-   docker pull ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper:develop-dev
+   docker pull ghcr.io/bohdanzasymovych/indomitus-rover-roadkeeper:develop-dev
    ```
 
    > **Note:** This step only needs to be done once. If you already have the image, you can skip it.

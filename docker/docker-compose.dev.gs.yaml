@@ -13,7 +13,7 @@ services:
         UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
         TARGET_ROS_DISTRO: ${TARGET_ROS_DISTRO:-humble}
 
-    image: ${IMAGE_NAME:-ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper}:${IMAGE_TAG:-local-dev}
+    image: ${IMAGE_NAME:-ghcr.io/bohdanzasymovych/indomitus-rover-roadkeeper}:${IMAGE_TAG:-local-dev}
     pull_policy: never
     # Same name and service as the other templates on purpose: they are
     # alternatives, one per device, and `docker compose up` on whichever one is

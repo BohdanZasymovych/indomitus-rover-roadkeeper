@@ -270,10 +270,10 @@ Next, you need the Docker image. You can either pull a pre-built image or build 
 For example, pull the image from `develop`:
 
 ```bash
-docker pull ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper:develop-dev
+docker pull ghcr.io/bohdanzasymovych/indomitus-rover-roadkeeper:develop-dev
 ```
 
-> **Pro Tip:** The images for the `develop` and `main` branches are built automatically, but you can also build an image for any branch. To do so, open the [GitHub Actions page](https://github.com/UCUSpaceRobotics/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml). Press the gray button on the right, select the branch for which you want to build an image, and click **Run workflow**. When the image is built, you can pull it with the command `docker pull ghcr.io/ucuspacerobotics/indomitus-rover-roadkeeper:<branch-name>-dev` (ensuring any slashes in your branch name are replaced with dashes, like `feature-shared-some-feature-dev`).
+> **Pro Tip:** The images for the `develop` and `main` branches are built automatically, but you can also build an image for any branch. To do so, open the [GitHub Actions page](https://github.com/UCUSpaceRobotics/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml). Press the gray button on the right, select the branch for which you want to build an image, and click **Run workflow**. When the image is built, you can pull it with the command `docker pull ghcr.io/bohdanzasymovych/indomitus-rover-roadkeeper:<branch-name>-dev` (ensuring any slashes in your branch name are replaced with dashes, like `feature-shared-some-feature-dev`).
 
 **Option B: Build the image locally**
 
