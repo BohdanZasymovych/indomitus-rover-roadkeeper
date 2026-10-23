@@ -68,6 +68,10 @@ def main():
                     help=f'Horizontal rut bridging kernel width (default: {C.BRIDGE_KERNEL_WIDTH})')
     ap.add_argument('--no_span_fill', action='store_true',
                     help='disable scanline row span stabilization')
+    ap.add_argument('--infer_width', type=int, default=C.INFER_WIDTH,
+                    help=f'DINOv2 inference width (default: {C.INFER_WIDTH})')
+    ap.add_argument('--infer_height', type=int, default=C.INFER_HEIGHT,
+                    help=f'DINOv2 inference height (default: {C.INFER_HEIGHT})')
     ap.add_argument('--smoothing_alpha', type=float, default=0.5, help='DeviationFilter alpha (matches rover_road_assist)')
     ap.add_argument('--stride', type=int, default=1, help='Process every N-th frame')
     ap.add_argument('--start_sec', type=float, default=0.0)
@@ -100,6 +104,7 @@ def main():
         weights=args.weights,
         device=args.device,
         post=post_params,
+        infer_size=(args.infer_width, args.infer_height),
     )
 
     # 2. Initialize rover_road_assist's deviation filter

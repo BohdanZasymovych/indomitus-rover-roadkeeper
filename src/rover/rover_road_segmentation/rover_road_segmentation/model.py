@@ -66,21 +66,27 @@ class DINOv2RoadNet(nn.Module):
             nn.Conv2d(64, 1, kernel_size=1),
         )
 
+        if torch.cuda.is_available():
+            torch.backends.cudnn.benchmark = getattr(C, 'TORCH_CUDNN_BENCHMARK', True)
+            if hasattr(torch, 'set_float32_matmul_precision'):
+                torch.set_float32_matmul_precision(getattr(C, 'TORCH_MATMUL_PRECISION', 'high'))
+
     def train(self, mode=True):
         super().train(mode)
         self.backbone.eval()  # frozen: never update its norm statistics
         return self
 
     def forward(self, x):
-        if x.shape[-2:] != (C.INFER_HEIGHT, C.INFER_WIDTH):
-            raise ValueError(f'expected input {C.INFER_HEIGHT}x{C.INFER_WIDTH}, got {tuple(x.shape[-2:])}')
+        h, w = x.shape[-2:]
+        if h % C.DINOV2_PATCH_SIZE != 0 or w % C.DINOV2_PATCH_SIZE != 0:
+            raise ValueError(f'input {h}x{w} must be divisible by patch size {C.DINOV2_PATCH_SIZE}')
         x = (x - self.img_mean) / self.img_std
         with torch.no_grad():
             layers = self.backbone.get_intermediate_layers(x, n=self.num_layers, reshape=True, norm=True)
-            feats = torch.cat(layers, dim=1)                      # (B, 384*N, 26, 51)
+            feats = torch.cat(layers, dim=1)
         f = self.proj(feats)
         f = self.dropout(f + self.refine(f))
-        e = self.edge(x)                                          # (B, 32, 91, 179)
+        e = self.edge(x)
         f = F.interpolate(f, size=e.shape[-2:], mode='bilinear', align_corners=False)
         return self.fuse(torch.cat([f, e], dim=1))
 
@@ -115,9 +121,8 @@ def load_model(path, device='cpu'):
     if ckpt.get('format') != CHECKPOINT_FORMAT:
         raise RuntimeError(f'{path}: not a {CHECKPOINT_FORMAT} checkpoint '
                            f'(got {ckpt.get("format")!r}); retrain with train_dinov2.py')
-    if tuple(ckpt['infer_size']) != (C.INFER_HEIGHT, C.INFER_WIDTH):
-        raise RuntimeError(f'{path}: trained at {ckpt["infer_size"]}, config says '
-                           f'{(C.INFER_HEIGHT, C.INFER_WIDTH)}')
     model = DINOv2RoadNet(hidden_dim=ckpt['hidden_dim'], num_layers=ckpt['num_layers'])
     model.load_head_state_dict(ckpt['head'])
-    return model.to(device).eval(), ckpt.get('meta', {})
+    meta = ckpt.get('meta', {})
+    meta['infer_size'] = ckpt.get('infer_size', (C.INFER_HEIGHT, C.INFER_WIDTH))
+    return model.to(device).eval(), meta

@@ -134,13 +134,13 @@ def run_job(seg, name, kind, path, args):
         Path(args.output_dir) / f'seg_{name}.mp4'
     writer, out_size = None, None
     inter = union = 0
-    stats = {'n': 0, 'empty': 0, 'road': [], 'ms': []}
+    stats = {'n': 0, 'empty': 0, 'road': [], 'ms': [], 'pre': [], 'infer': [], 'post': []}
     paused = False
 
     for frame, labels, tag in frames:
         h, w = frame.shape[:2]
         t0 = time.perf_counter()
-        mask = seg.segment(frame, 'bgr')
+        mask = seg.segment(frame, 'bgr', profile=args.profile)
         dt = time.perf_counter() - t0
 
         assert mask.shape == (h, w) and mask.dtype == np.uint8 and mask.max(initial=0) <= 1
@@ -149,14 +149,21 @@ def run_job(seg, name, kind, path, args):
         stats['empty'] += int(road == 0.0)
         stats['road'].append(road)
         stats['ms'].append(dt * 1000.0)
+        if args.profile and seg.last_profile:
+            stats['pre'].append(seg.last_profile.get('t_pre_ms', 0.0))
+            stats['infer'].append(seg.last_profile.get('t_infer_ms', 0.0))
+            stats['post'].append(seg.last_profile.get('t_post_ms', 0.0))
 
         over = overlay(frame, mask, args.alpha)
         dev = None
         if not args.no_scanlines:
             dev = draw_scanlines_and_deviation(over, mask, estimate_dev=True)
 
-        lines = [f'{name}  {tag}', f'{w}x{h}  infer {1.0 / max(dt, 1e-6):5.1f} FPS ({dt * 1000:4.0f} ms)',
+        lines = [f'{name}  {tag}', f'{w}x{h} -> {seg.infer_width}x{seg.infer_height}  {1.0 / max(dt, 1e-6):5.1f} FPS ({dt * 1000:4.0f} ms)',
                  f'road {road * 100:5.1f}%' + ('   NO ROAD' if road == 0 else '')]
+        if args.profile and seg.last_profile:
+            lp = seg.last_profile
+            lines.append(f'breakdown: pre {lp["t_pre_ms"]:.1f}ms | inf {lp["t_infer_ms"]:.1f}ms | post {lp["t_post_ms"]:.1f}ms')
         if dev is not None and dev.valid:
             sign = '+' if dev.lateral_offset >= 0 else ''
             lines.append(f'offset: {sign}{dev.lateral_offset:.3f} hw | head: {dev.heading_error:+.3f} rad | conf: {dev.confidence:.2f}')
@@ -213,8 +220,10 @@ def run_job(seg, name, kind, path, args):
         writer.release()
     if stats['n']:
         ms = np.array(stats['ms'][5:] or stats['ms'])
-        msg = (f'[=] {name}: {stats["n"]} frames | {1000.0 / ms.mean():.1f} FPS ({ms.mean():.0f} ms) | '
+        msg = (f'[=] {name}: {stats["n"]} frames | {1000.0 / ms.mean():.1f} FPS ({ms.mean():.1f} ms) | '
                f'mean road {100 * np.mean(stats["road"]):.1f}% | empty masks {100.0 * stats["empty"] / stats["n"]:.1f}%')
+        if stats['infer']:
+            msg += f'\n    └─ breakdown: pre {np.mean(stats["pre"]):.1f} ms | infer {np.mean(stats["infer"]):.1f} ms | post {np.mean(stats["post"]):.1f} ms'
         if union:
             msg += f' | IoU {100.0 * inter / union:.1f}%'
         if writer is not None:
@@ -230,6 +239,11 @@ def main():
     ap.add_argument('--weights', default=str(C.DEFAULT_WEIGHTS))
     ap.add_argument('--device', default='auto')
     ap.add_argument('--no_fp16', action='store_true')
+    ap.add_argument('--infer_width', type=int, default=C.INFER_WIDTH,
+                    help=f'DINOv2 inference width, multiple of 14 (default: {C.INFER_WIDTH})')
+    ap.add_argument('--infer_height', type=int, default=C.INFER_HEIGHT,
+                    help=f'DINOv2 inference height, multiple of 14 (default: {C.INFER_HEIGHT})')
+    ap.add_argument('--profile', action='store_true', help='enable detailed latency profiling per frame')
     ap.add_argument('--threshold', type=float, default=C.ROAD_PROB_THRESHOLD)
     ap.add_argument('--temporal_alpha', type=float, default=C.TEMPORAL_ALPHA,
                     help=f'EMA weight for current frame probability (default: {C.TEMPORAL_ALPHA})')
@@ -271,8 +285,15 @@ def main():
         enable_convex_span_fill=not args.no_span_fill,
         mask_hud=not args.no_hud_mask,
     )
-    seg = RoadSegmenter(args.weights, device=args.device, use_fp16=not args.no_fp16, post=post_params)
-    print(f'[*] {C.DINOV2_MODEL_NAME} on {seg.device} (fp16={seg.use_fp16}), threshold {args.threshold}, '
+    seg = RoadSegmenter(
+        args.weights,
+        device=args.device,
+        use_fp16=not args.no_fp16,
+        post=post_params,
+        infer_size=(args.infer_width, args.infer_height),
+    )
+    print(f'[*] {C.DINOV2_MODEL_NAME} on {seg.device} (fp16={seg.use_fp16}), '
+          f'infer_size {seg.infer_width}x{seg.infer_height}, threshold {args.threshold}, '
           f'temporal_alpha {args.temporal_alpha}, bridge_w {args.bridge_width}, {len(args.jobs)} input(s)')
     try:
         for name, kind, path in args.jobs:

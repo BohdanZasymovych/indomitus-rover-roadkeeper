@@ -51,6 +51,8 @@ class RoadSegmentationNode(Node):
         weights = p('weights_path', '').value or default_weights()
         device = p('device', 'auto').value
         use_fp16 = p('use_fp16', True).value
+        infer_w = p('infer_width', C.INFER_WIDTH).value
+        infer_h = p('infer_height', C.INFER_HEIGHT).value
         p('publish_debug_vis', False)
         p('debug_overlay_alpha', 0.45)
         p('prob_threshold', C.ROAD_PROB_THRESHOLD)
@@ -72,7 +74,13 @@ class RoadSegmentationNode(Node):
         from rover_road_segmentation.segmenter import PostProcessParams, RoadSegmenter
         self._post_cls = PostProcessParams
         self.get_logger().info(f'loading {C.DINOV2_MODEL_NAME} + head from {weights}')
-        self.segmenter = RoadSegmenter(weights, device=device, use_fp16=use_fp16, post=self._post_params())
+        self.segmenter = RoadSegmenter(
+            weights,
+            device=device,
+            use_fp16=use_fp16,
+            post=self._post_params(),
+            infer_size=(infer_w, infer_h),
+        )
         self.add_on_set_parameters_callback(self._on_params)
 
         self.mask_pub = self.create_publisher(Image, mask_topic, MASK_QOS)
@@ -85,9 +93,11 @@ class RoadSegmentationNode(Node):
 
         self._warned = set()
         self._frames, self._busy, self._t_report = 0, 0.0, time.monotonic()
+        self._prof_pre, self._prof_infer, self._prof_post = 0.0, 0.0, 0.0
         self.get_logger().info(
             f'road_segmentation_node: {image_topic} -> {mask_topic} '
             f'(device={self.segmenter.device}, fp16={self.segmenter.use_fp16}, '
+            f'infer_size={self.segmenter.infer_width}x{self.segmenter.infer_height}, '
             f'temporal_alpha={self.segmenter.post.temporal_alpha})')
 
     # --- parameters -------------------------------------------------------
@@ -141,7 +151,7 @@ class RoadSegmentationNode(Node):
             self._warn_once(msg.encoding, f'dropping frames: {exc}')
             return
 
-        mask = self.segmenter.segment(frame, order)       # (H, W) uint8 0/1
+        mask = self.segmenter.segment(frame, order, profile=True)       # (H, W) uint8 0/1
 
         out = Image(header=msg.header, **mask_fields(mask))
         self.mask_pub.publish(out)
@@ -151,13 +161,27 @@ class RoadSegmentationNode(Node):
 
         self._frames += 1
         self._busy += time.perf_counter() - t0
+        prof = self.segmenter.last_profile
+        if prof:
+            self._prof_pre += prof.get('t_pre_ms', 0.0)
+            self._prof_infer += prof.get('t_infer_ms', 0.0)
+            self._prof_post += prof.get('t_post_ms', 0.0)
+
         now = time.monotonic()
         if now - self._t_report >= 10.0:
             rate = self._frames / (now - self._t_report)
             ms = 1000.0 * self._busy / max(1, self._frames)
-            self.get_logger().info(f'{rate:.1f} masks/s, {ms:.0f} ms per frame, '
-                                   f'{msg.width}x{msg.height}, road {100.0 * mask.mean():.0f}%')
+            p_pre = self._prof_pre / max(1, self._frames)
+            p_infer = self._prof_infer / max(1, self._frames)
+            p_post = self._prof_post / max(1, self._frames)
+            self.get_logger().info(
+                f'{rate:.1f} FPS | {ms:.1f} ms/frame '
+                f'(pre: {p_pre:.1f}ms, infer: {p_infer:.1f}ms, post: {p_post:.1f}ms) | '
+                f'{msg.width}x{msg.height} -> {self.segmenter.infer_width}x{self.segmenter.infer_height} | '
+                f'road {100.0 * mask.mean():.1f}%'
+            )
             self._frames, self._busy, self._t_report = 0, 0.0, now
+            self._prof_pre, self._prof_infer, self._prof_post = 0.0, 0.0, 0.0
 
     def _publish_debug(self, msg, frame, order, mask):
         import cv2

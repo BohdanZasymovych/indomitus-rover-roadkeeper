@@ -8,6 +8,8 @@
     weights_path: ''          # '' = share/rover_road_segmentation/weights/road_segmenter_dinov2.pt
     device: auto              # auto | cuda | cuda:0 | cpu
     use_fp16: true            # autocast on CUDA only
+    infer_width: 448          # fast 512-token DINOv2 resolution (multiples of 14)
+    infer_height: 224
 
     # --- Post-processing (runtime-changeable with ros2 param set) ---
     prob_threshold: 0.65          # road only if p(road) > this; higher = fewer false positives in the field
