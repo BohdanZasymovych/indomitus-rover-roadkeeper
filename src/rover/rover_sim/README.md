@@ -69,4 +69,4 @@ ros2 launch rover_sim road_assist_sim_gz.launch.py
 
 This starts `worlds/dirt_road.sdf` with the simulated front RGB camera enabled.
 The LiDAR, depth camera, and camera IMU are disabled. The RGB image is bridged
-to `/rover/zed2i/rgb/image_rect_color`.
+to `/rover/cameras/zed2i/image_raw`.

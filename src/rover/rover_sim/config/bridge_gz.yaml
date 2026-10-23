@@ -10,13 +10,13 @@
   gz_type_name: gz.msgs.LaserScan
   direction: GZ_TO_ROS
 
-- ros_topic_name: zed2i/rgb/image_rect_color
+- ros_topic_name: cameras/zed2i/image_raw
   gz_topic_name: /zed2i/rgb/image_rect_color
   ros_type_name: sensor_msgs/msg/Image
   gz_type_name: gz.msgs.Image
   direction: GZ_TO_ROS
 
-- ros_topic_name: zed2i/rgb/camera_info
+- ros_topic_name: cameras/zed2i/camera_info
   gz_topic_name: /zed2i/rgb/camera_info
   ros_type_name: sensor_msgs/msg/CameraInfo
   gz_type_name: gz.msgs.CameraInfo

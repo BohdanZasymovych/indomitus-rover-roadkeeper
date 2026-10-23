@@ -15,8 +15,7 @@ go without it (the drive stack is then not running, so nothing moves).
     ros2 launch rover_bringup road_pipeline.launch.py use_cameras:=false use_assist:=false
 
 With rover_sim's road_assist_sim_gz.launch.py (simulated ZED RGB camera, no road_assist_node):
-    ros2 launch rover_bringup road_pipeline.launch.py use_cameras:=false use_sim_time:=true \\
-        image_topic:=/rover/zed2i/rgb/image_rect_color
+    ros2 launch rover_bringup road_pipeline.launch.py use_cameras:=false use_sim_time:=true
 """
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction
