@@ -1,7 +1,7 @@
 """
 Drone detection on one rover_cameras camera:
 
-    cameras/<camera>/image_raw -> drone_detection_node -> drones/{detections,threat,image_annotated}
+    cameras/<camera>/image_raw -> drone_detection_node -> drones/{detections,image_annotated}
 
 Needs `pip3 install -r requirements.txt` (ultralytics) and `git lfs pull` (the models).
 
@@ -34,7 +34,6 @@ def _nodes(context):
         ],
         remappings=[
             ('image', f'cameras/{camera}/image_raw'),
-            ('camera_info', f'cameras/{camera}/camera_info'),
         ],
         output='screen',
     )

@@ -4,7 +4,7 @@
   <name>rover_drone_detection</name>
   <version>0.0.0</version>
   <description>
-    Camera-based detection of waiter FPV drones (ambush drones sitting by the road): YOLO on the camera stream, a confirmed WARN/DANGER threat level and an annotated image for the operator, and a log of every sighting with the rover's pose and the drone's estimated position.
+    Camera-based detection of waiter FPV drones (ambush drones sitting by the road): YOLO on the camera stream, the boxes as vision_msgs detections and drawn on an annotated image for the operator.
   </description>
   <maintainer email="andriykulbabapetrovych@gmail.com">andrii</maintainer>
   <license>MIT</license>
@@ -13,8 +13,6 @@
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>vision_msgs</depend>
-  <depend>tf2_ros</depend>
-  <depend>indomitus_interfaces</depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>
   <!-- ultralytics (+ torch) has no rosdep key: pip install -r requirements.txt -->

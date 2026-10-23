@@ -23,8 +23,8 @@ setup(
     zip_safe=True,
     maintainer='andrii',
     maintainer_email='andriykulbabapetrovych@gmail.com',
-    description='Camera-based detection of waiter FPV drones: warns the operator, draws the boxes '
-                'and logs every sighting with the rover pose and the estimated drone position.',
+    description='Camera-based detection of waiter FPV drones: publishes the boxes and draws them '
+                'on an annotated image for the operator.',
     license='MIT',
     extras_require={
         'test': [

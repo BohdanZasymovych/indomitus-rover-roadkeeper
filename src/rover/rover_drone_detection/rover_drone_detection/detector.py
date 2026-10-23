@@ -10,8 +10,35 @@ lazily so the rest of the package (and its tests) does not need torch.
 """
 
 import os
+from dataclasses import dataclass
 
-from rover_drone_detection.threat import Detection
+
+@dataclass(frozen=True)
+class Detection:
+    """One box in pixel coordinates of the image it was detected in."""
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    score: float
+    cls: int = 0
+    label: str = 'waiter_fpv_drone'
+
+    @property
+    def width(self):
+        return self.x2 - self.x1
+
+    @property
+    def height(self):
+        return self.y2 - self.y1
+
+    @property
+    def cx(self):
+        return 0.5 * (self.x1 + self.x2)
+
+    @property
+    def cy(self):
+        return 0.5 * (self.y1 + self.y2)
 
 
 def resolve_model_path(model, models_dir):
