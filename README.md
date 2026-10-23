@@ -14,7 +14,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/BohdanZasymovych/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml?query=branch%3Amain"><img alt="main build" src="https://img.shields.io/github/actions/workflow/status/BohdanZasymovych/indomitus-rover-roadkeeper/publish_image.yaml?branch=main&label=main%20build&logo=github"></a>
   <a href="https://github.com/BohdanZasymovych/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml?query=branch%3Adevelop"><img alt="develop build" src="https://img.shields.io/github/actions/workflow/status/BohdanZasymovych/indomitus-rover-roadkeeper/publish_image.yaml?branch=develop&label=develop%20build&logo=github"></a>
   <a href="https://github.com/BohdanZasymovych/indomitus-rover-roadkeeper/releases"><img alt="develop release" src="https://img.shields.io/github/v/release/BohdanZasymovych/indomitus-rover-roadkeeper?include_prereleases&label=develop"></a>
 </p>
