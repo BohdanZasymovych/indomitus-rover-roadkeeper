@@ -463,8 +463,8 @@ class LightsCanNode(Node):
         _on_traffic_request does, since nothing is left to deliver one on
         _on_can_msg. A killed lights_can_node must not leave the tower lit
         with whatever colour was last commanded; nothing else on the rover
-        clears it, and gs_link_lamp_node / drive_source_lamp_node only ever
-        change the lamp, they never turn it off on their own exit either.
+        clears it, and drive_source_lamp_node only ever changes the lamp,
+        it never turns it off on its own exit either.
         """
         with self._can_lock:
             self._send_cmd(self._cmd_id, [self._cmd_traffic_light, 0])

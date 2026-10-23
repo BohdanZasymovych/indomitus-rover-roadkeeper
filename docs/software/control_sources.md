@@ -14,15 +14,17 @@
 |---|---|---|---|
 | rover gamepad (wired) | `/rover/joy` | `cmd_vel_joy` | 100 |
 | ground station | `/gs/joy`, `/gs/switches` | `cmd_vel_gs` | 50 |
-| laptop gamepad **or** keyboard (one at a time) | `/rover/remote/joy`, `/rover/remote/keyboard/joy` | `cmd_vel_remote` | 30 |
-| Nav2 | — | `cmd_vel_nav` | 20 |
+| laptop gamepad **or** keyboard (one at a time) | `/rover/remote/joy`, `/rover/remote/keyboard/joy` | `cmd_vel_remote`, via `road_assist_node`¹ | 30 |
 | external | — | `cmd_vel_ext` | 10 |
-| LoRa fallback | radio | `cmd_vel_lora` | 5 |
+
+¹ Laptop teleop publishes `cmd_vel_remote_raw`; `road_assist_node` (rover_road_assist, started by
+  `rover.launch.py` and `sim_gz.launch.py`) is the only publisher on `cmd_vel_remote` and passes it
+  through, correcting `angular.z` only while the assist is on. Topic names: `road_assist.yaml`.
 
 - Laptop nodes stay in `/rover` with a `remote_` prefix, so relative service names hit the rover.
 - Start: rover pad — `rover.launch.py` (`source:=rover`); laptop pad —
   `ros2 launch rover_teleop gamepad.launch.py` (default `source:=remote`); keyboard —
   `ros2 run rover_teleop keyboard_teleop_node`.
 - New source: own topics/names → `twist_mux.yaml` + `DEFAULT_SOURCES` → requests only → a row above.
-- Open: GS can set the traffic lamps directly, but `drive_source_lamp_node` / `gs_link_lamp_node`
-  overwrite them on the next change.
+- Open: GS can set the traffic lamps directly, but `drive_source_lamp_node` overwrites red/green
+  on the next change.

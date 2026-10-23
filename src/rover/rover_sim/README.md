@@ -31,21 +31,23 @@ git lfs pull
 |---|---|---|
 | `mars_yard` | `2025`, `2026` | `low`, `medium`, `high` (2025 only; ignored for 2026) |
 | `nav2_test_world` | - | - |
+| `flat_track` | - | - |
 
 ## `sim_gz.launch.py`
 
-Launches the Gazebo world, spawns the rover, and starts its base stack: `ros_gz_bridge`, `robot_state_publisher`, EKF, `twist_mux`, and the base + swerve controllers.
+Launches the Gazebo world, spawns the rover, and starts its base stack: `ros_gz_bridge`, `robot_state_publisher`, EKF, `twist_mux`, `drive_manager`, `road_assist_node`, and the base + swerve controllers.
 
 | Argument | Default | Description |
 |---|---|---|
 | `swerve_controller` | `swerve_controller_test` | Which swerve controller comes up active (`swerve_controller`, `swerve_controller_test`). |
-| `world_name` | `mars_yard` | World to load: `mars_yard`, `nav2_test_world`. |
+| `world_name` | `mars_yard` | World to load: `mars_yard`, `nav2_test_world`, `flat_track` (flat 300 m plane, used by `rover_road_assist_sim`). |
 | `map_year` | `2026` | `mars_yard` map year: `2025`, `2026`. |
 | `map_resolution` | `high` | `mars_yard` (2025) mesh resolution: `low`, `medium`, `high`. Ignored for 2026/other worlds. |
 | `model_name` | `indomitus_rover` | Name the robot model is spawned under. |
 | `spawn_delay` | `5.0` | Seconds to wait before spawning the robot. |
 | `extra_xacro_args` | *(empty)* | Extra flags passed to the URDF xacro compiler. |
 | `spawn_x` / `spawn_y` / `spawn_z` | `0.0` / `0.0` / `0.5` | Initial spawn coordinates (m). |
+| `road_assist_params_file` | *(empty)* | Params layered over `road_assist.yaml` for the `road_assist_node` this launch starts (it forwards laptop teleop's `cmd_vel_remote_raw` to `cmd_vel_remote`). |
 
 **Example:**
 
@@ -57,27 +59,4 @@ Legacy/fallback (2025 map):
 
 ```bash
 ros2 launch rover_sim sim_gz.launch.py map_year:=2025 map_resolution:=high
-```
-
-## `sim_gz_nav2.launch.py`
-
-Includes `sim_gz.launch.py` (with LiDAR/depth simulation xacro args enabled), then after a 10s delay starts `scan_filter`, SLAM, and Nav2.
-
-All world/map/model/spawn arguments below are forwarded as-is to `sim_gz.launch.py` — leave them empty to use its defaults.
-
-| Argument | Default | Description |
-|---|---|---|
-| `world_name` | *(empty → sim_gz default)* | World to load. |
-| `map_year` | *(empty → sim_gz default)* | `mars_yard` map year. |
-| `map_resolution` | *(empty → sim_gz default)* | `mars_yard` (2025) mesh resolution. |
-| `model_name` | *(empty → sim_gz default)* | Robot model name. |
-| `spawn_x` / `spawn_y` / `spawn_z` | *(empty → sim_gz default)* | Initial spawn coordinates. |
-| `scan_filter_params_file` | *(empty → package default)* | Scan filter params override. |
-| `nav2_params_file` | *(empty → package default)* | Nav2 params override. |
-| `slam_params_file` | *(empty → package default)* | SLAM params override. |
-
-**Example:**
-
-```bash
-ros2 launch rover_sim sim_gz_nav2.launch.py
 ```
