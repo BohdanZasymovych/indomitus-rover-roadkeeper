@@ -25,7 +25,12 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from rover_road_segmentation import config as C  # noqa: E402
-from rover_road_segmentation.visualization import info_panel, overlay, side_by_side  # noqa: E402
+from rover_road_segmentation.visualization import (  # noqa: E402
+    draw_scanlines_and_deviation,
+    info_panel,
+    overlay,
+    side_by_side,
+)
 
 VIDEO_EXT = {'.mp4', '.avi', '.mkv', '.mov', '.m4v', '.webm'}
 IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.bmp'}
@@ -111,6 +116,7 @@ def iter_images(folder, stride, gt_dir):
 # Main loop
 # ---------------------------------------------------------------------------
 def run_job(seg, name, kind, path, args):
+    seg.reset()  # Clean slate for each video / image sequence
     if kind == 'video':
         fps_in, total, w, h = video_meta(path)
         frames = iter_video(path, args.start_sec, args.stride)
@@ -144,8 +150,19 @@ def run_job(seg, name, kind, path, args):
         stats['road'].append(road)
         stats['ms'].append(dt * 1000.0)
 
+        over = overlay(frame, mask, args.alpha)
+        dev = None
+        if not args.no_scanlines:
+            dev = draw_scanlines_and_deviation(over, mask, estimate_dev=True)
+
         lines = [f'{name}  {tag}', f'{w}x{h}  infer {1.0 / max(dt, 1e-6):5.1f} FPS ({dt * 1000:4.0f} ms)',
                  f'road {road * 100:5.1f}%' + ('   NO ROAD' if road == 0 else '')]
+        if dev is not None and dev.valid:
+            sign = '+' if dev.lateral_offset >= 0 else ''
+            lines.append(f'offset: {sign}{dev.lateral_offset:.3f} hw | head: {dev.heading_error:+.3f} rad | conf: {dev.confidence:.2f}')
+        elif dev is not None:
+            lines.append('offset: INVALID (no scanline span)')
+
         if labels is not None:
             valid = labels != C.LABEL_IGNORE
             gt = labels == C.LABEL_ROAD
@@ -154,9 +171,12 @@ def run_job(seg, name, kind, path, args):
             lines.append(f'IoU {100.0 * i_ / max(u_, 1):5.1f}%')
 
         if args.layout == 'side':
-            vis = side_by_side(frame, mask, lines, args.alpha)
+            left = info_panel(over, lines)
+            right = cv2.cvtColor(mask.astype(np.uint8) * 255, cv2.COLOR_GRAY2BGR)
+            vis = np.hstack([left, right])
         else:
-            vis = info_panel(overlay(frame, mask, args.alpha), lines)
+            vis = info_panel(over, lines)
+
         if out_size is None:
             out_size = (vis.shape[1], vis.shape[0])
         if (vis.shape[1], vis.shape[0]) != out_size:
@@ -211,6 +231,18 @@ def main():
     ap.add_argument('--device', default='auto')
     ap.add_argument('--no_fp16', action='store_true')
     ap.add_argument('--threshold', type=float, default=C.ROAD_PROB_THRESHOLD)
+    ap.add_argument('--temporal_alpha', type=float, default=C.TEMPORAL_ALPHA,
+                    help=f'EMA weight for current frame probability (default: {C.TEMPORAL_ALPHA})')
+    ap.add_argument('--bridge_width', type=int, default=C.BRIDGE_KERNEL_WIDTH,
+                    help=f'Horizontal rut bridging kernel width (default: {C.BRIDGE_KERNEL_WIDTH})')
+    ap.add_argument('--bridge_height', type=int, default=C.BRIDGE_KERNEL_HEIGHT,
+                    help=f'Horizontal rut bridging kernel height (default: {C.BRIDGE_KERNEL_HEIGHT})')
+    ap.add_argument('--vertical_kernel', type=int, default=C.VERTICAL_KERNEL_HEIGHT,
+                    help=f'Vertical continuity kernel height (default: {C.VERTICAL_KERNEL_HEIGHT})')
+    ap.add_argument('--no_span_fill', action='store_true',
+                    help='disable scanline row span stabilization')
+    ap.add_argument('--no_scanlines', action='store_true',
+                    help='do not draw scanlines and deviation telemetry on visualization')
     ap.add_argument('--no_hud_mask', action='store_true', help='do not blank the bottom-left HUD box')
     ap.add_argument('--layout', choices=['overlay', 'side'], default='side',
                     help='side = [overlay | raw mask*255], overlay = overlay only')
@@ -230,10 +262,18 @@ def main():
     from rover_road_segmentation.segmenter import PostProcessParams, RoadSegmenter
     src = resolve_input(args.input)
     args.jobs = list_jobs(src)
-    seg = RoadSegmenter(args.weights, device=args.device, use_fp16=not args.no_fp16,
-                        post=PostProcessParams(threshold=args.threshold, mask_hud=not args.no_hud_mask))
+    post_params = PostProcessParams(
+        threshold=args.threshold,
+        temporal_alpha=args.temporal_alpha,
+        bridge_kernel_width=args.bridge_width,
+        bridge_kernel_height=args.bridge_height,
+        vertical_kernel_height=args.vertical_kernel,
+        enable_convex_span_fill=not args.no_span_fill,
+        mask_hud=not args.no_hud_mask,
+    )
+    seg = RoadSegmenter(args.weights, device=args.device, use_fp16=not args.no_fp16, post=post_params)
     print(f'[*] {C.DINOV2_MODEL_NAME} on {seg.device} (fp16={seg.use_fp16}), threshold {args.threshold}, '
-          f'{len(args.jobs)} input(s)')
+          f'temporal_alpha {args.temporal_alpha}, bridge_w {args.bridge_width}, {len(args.jobs)} input(s)')
     try:
         for name, kind, path in args.jobs:
             run_job(seg, name, kind, path, args)

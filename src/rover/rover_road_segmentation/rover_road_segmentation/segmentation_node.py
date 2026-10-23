@@ -54,11 +54,19 @@ class RoadSegmentationNode(Node):
         p('publish_debug_vis', False)
         p('debug_overlay_alpha', 0.45)
         p('prob_threshold', C.ROAD_PROB_THRESHOLD)
+        p('temporal_alpha', C.TEMPORAL_ALPHA)
         p('mask_hud', True)
         p('morph_kernel_ref', C.MORPH_KERNEL_REF)
         p('lower_half_start', C.LOWER_HALF_START)
         p('min_component_fraction', C.MIN_COMPONENT_FRACTION)
         p('min_frame_brightness', C.MIN_FRAME_BRIGHTNESS)
+        p('bridge_kernel_width', C.BRIDGE_KERNEL_WIDTH)
+        p('bridge_kernel_height', C.BRIDGE_KERNEL_HEIGHT)
+        p('vertical_kernel_height', C.VERTICAL_KERNEL_HEIGHT)
+        p('vertical_kernel_width', C.VERTICAL_KERNEL_WIDTH)
+        p('enable_convex_span_fill', C.ENABLE_CONVEX_SPAN_FILL)
+        p('max_span_gap_fraction', C.MAX_SPAN_GAP_FRACTION)
+        p('span_fill_start_y', C.SPAN_FILL_START_Y)
 
         # torch is imported here so a missing install fails with a clear log line.
         from rover_road_segmentation.segmenter import PostProcessParams, RoadSegmenter
@@ -79,19 +87,36 @@ class RoadSegmentationNode(Node):
         self._frames, self._busy, self._t_report = 0, 0.0, time.monotonic()
         self.get_logger().info(
             f'road_segmentation_node: {image_topic} -> {mask_topic} '
-            f'(device={self.segmenter.device}, fp16={self.segmenter.use_fp16})')
+            f'(device={self.segmenter.device}, fp16={self.segmenter.use_fp16}, '
+            f'temporal_alpha={self.segmenter.post.temporal_alpha})')
 
     # --- parameters -------------------------------------------------------
     def _post_params(self, overrides=None):
-        v = {n: self.get_parameter(n).value for n in (
-            'prob_threshold', 'mask_hud', 'morph_kernel_ref', 'lower_half_start',
-            'min_component_fraction', 'min_frame_brightness')}
+        names = (
+            'prob_threshold', 'temporal_alpha', 'mask_hud', 'morph_kernel_ref',
+            'lower_half_start', 'min_component_fraction', 'min_frame_brightness',
+            'bridge_kernel_width', 'bridge_kernel_height', 'vertical_kernel_height',
+            'vertical_kernel_width', 'enable_convex_span_fill', 'max_span_gap_fraction',
+            'span_fill_start_y'
+        )
+        v = {n: self.get_parameter(n).value for n in names}
         v.update(overrides or {})
         return self._post_cls(
-            threshold=float(v['prob_threshold']), mask_hud=bool(v['mask_hud']),
-            morph_kernel_ref=int(v['morph_kernel_ref']), lower_half_start=float(v['lower_half_start']),
+            threshold=float(v['prob_threshold']),
+            temporal_alpha=float(v['temporal_alpha']),
+            mask_hud=bool(v['mask_hud']),
+            morph_kernel_ref=int(v['morph_kernel_ref']),
+            lower_half_start=float(v['lower_half_start']),
             min_component_fraction=float(v['min_component_fraction']),
-            min_frame_brightness=float(v['min_frame_brightness']))
+            min_frame_brightness=float(v['min_frame_brightness']),
+            bridge_kernel_width=int(v['bridge_kernel_width']),
+            bridge_kernel_height=int(v['bridge_kernel_height']),
+            vertical_kernel_height=int(v['vertical_kernel_height']),
+            vertical_kernel_width=int(v['vertical_kernel_width']),
+            enable_convex_span_fill=bool(v['enable_convex_span_fill']),
+            max_span_gap_fraction=float(v['max_span_gap_fraction']),
+            span_fill_start_y=float(v['span_fill_start_y']),
+        )
 
     def _on_params(self, params):
         from rcl_interfaces.msg import SetParametersResult

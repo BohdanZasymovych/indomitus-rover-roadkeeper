@@ -92,3 +92,15 @@ ROAD_PROB_THRESHOLD = 0.65     # road only if p(road) > this
 MORPH_KERNEL_REF = 7           # [px at REF_HEIGHT] open (denoise) + close (fill ruts)
 LOWER_HALF_START = 0.5         # the kept component is the largest one below this row fraction
 MIN_COMPONENT_FRACTION = 0.01  # of the lower-half area; a smaller "largest" blob is noise
+
+# ---------------------------------------------------------------------------
+# Layer A: Mask Regularization, Rut Bridging & Temporal Smoothing
+# ---------------------------------------------------------------------------
+TEMPORAL_ALPHA = 0.60          # weight of current frame in EMA: p_hat = alpha * p + (1 - alpha) * p_prev
+BRIDGE_KERNEL_WIDTH = 35       # wide horizontal closing kernel [px at INFER_WIDTH] to bridge ruts
+BRIDGE_KERNEL_HEIGHT = 9       # horizontal closing kernel height
+VERTICAL_KERNEL_HEIGHT = 25    # vertical closing kernel height [px at INFER_HEIGHT] for travel continuity
+VERTICAL_KERNEL_WIDTH = 9      # vertical closing kernel width
+ENABLE_CONVEX_SPAN_FILL = True # fill horizontal gap between ruts on lower scanlines
+MAX_SPAN_GAP_FRACTION = 0.30   # max horizontal gap fraction across ruts to bridge (e.g. 30% of width)
+SPAN_FILL_START_Y = 0.45       # row fraction above which span fill is applied (lower half of frame)

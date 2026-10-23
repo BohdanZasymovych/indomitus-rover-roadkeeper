@@ -62,6 +62,12 @@ def main():
     ap.add_argument('--weights', default=str(C.DEFAULT_WEIGHTS), help='DINOv2 head checkpoint')
     ap.add_argument('--device', default='auto')
     ap.add_argument('--threshold', type=float, default=C.ROAD_PROB_THRESHOLD)
+    ap.add_argument('--temporal_alpha', type=float, default=C.TEMPORAL_ALPHA,
+                    help=f'EMA weight for current frame probability (default: {C.TEMPORAL_ALPHA})')
+    ap.add_argument('--bridge_width', type=int, default=C.BRIDGE_KERNEL_WIDTH,
+                    help=f'Horizontal rut bridging kernel width (default: {C.BRIDGE_KERNEL_WIDTH})')
+    ap.add_argument('--no_span_fill', action='store_true',
+                    help='disable scanline row span stabilization')
     ap.add_argument('--smoothing_alpha', type=float, default=0.5, help='DeviationFilter alpha (matches rover_road_assist)')
     ap.add_argument('--stride', type=int, default=1, help='Process every N-th frame')
     ap.add_argument('--start_sec', type=float, default=0.0)
@@ -84,10 +90,16 @@ def main():
         cap.set(cv2.CAP_PROP_POS_MSEC, args.start_sec * 1000.0)
 
     # 1. Initialize our DINOv2 segmenter
+    post_params = PostProcessParams(
+        threshold=args.threshold,
+        temporal_alpha=args.temporal_alpha,
+        bridge_kernel_width=args.bridge_width,
+        enable_convex_span_fill=not args.no_span_fill,
+    )
     seg = RoadSegmenter(
         weights=args.weights,
         device=args.device,
-        post=PostProcessParams(threshold=args.threshold),
+        post=post_params,
     )
 
     # 2. Initialize rover_road_assist's deviation filter

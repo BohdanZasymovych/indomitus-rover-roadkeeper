@@ -37,8 +37,63 @@ def info_panel(image, lines, origin=(8, 8)):
     return image
 
 
-def side_by_side(frame_bgr, mask, lines=None, alpha=0.45):
-    """[overlay | mask*255] next to each other, with the info panel on the overlay."""
-    left = info_panel(overlay(frame_bgr, mask, alpha), lines)
+def draw_scanlines_and_deviation(img, mask, row_fractions=(0.6, 0.7, 0.8, 0.9),
+                                 target_col_fraction=0.5, estimate_dev=True):
+    """Draws rover_road_assist scanlines, detected spans, and road centers.
+
+    Optionally calculates and returns Deviation from rover_road_assist.
+    """
+    h, w = mask.shape[:2]
+    target_col = int(target_col_fraction * (w - 1))
+
+    # Rover vehicle centerline axis
+    cv2.line(img, (target_col, int(h * 0.45)), (target_col, h), (0, 220, 255), 1, cv2.LINE_AA)
+
+    # 4 scanlines used by rover_road_assist
+    min_width = max(1, int(0.05 * w))
+    for frac in row_fractions:
+        r = min(h - 1, int(frac * h))
+        cv2.line(img, (0, r), (w, r), (70, 70, 70), 1, cv2.LINE_4)
+
+        row = mask[r]
+        if np.any(row > 0):
+            padded = np.concatenate(([0], (row > 0).view(np.int8), [0]))
+            edges = np.diff(padded)
+            starts = np.flatnonzero(edges == 1)
+            ends = np.flatnonzero(edges == -1)
+            for s, e in zip(starts, ends):
+                span = e - s
+                if span >= min_width:
+                    cx = int((s + e - 1) / 2.0)
+                    cv2.line(img, (s, r), (e - 1, r), (0, 255, 255), 2, cv2.LINE_AA)
+                    cv2.circle(img, (s, r), 3, (0, 200, 255), -1)
+                    cv2.circle(img, (e - 1, r), 3, (0, 200, 255), -1)
+                    cv2.circle(img, (cx, r), 4, (0, 255, 255), -1)
+
+    dev = None
+    if estimate_dev:
+        try:
+            from rover_road_assist.road_deviation import estimate_deviation
+            dev = estimate_deviation(mask, row_fractions=row_fractions, target_col_fraction=target_col_fraction)
+        except Exception:
+            try:
+                import sys
+                from pathlib import Path
+                assist_dir = Path(__file__).resolve().parent.parent.parent / 'rover_road_assist'
+                if str(assist_dir) not in sys.path and assist_dir.exists():
+                    sys.path.insert(0, str(assist_dir))
+                from rover_road_assist.road_deviation import estimate_deviation
+                dev = estimate_deviation(mask, row_fractions=row_fractions, target_col_fraction=target_col_fraction)
+            except Exception:
+                pass
+    return dev
+
+
+def side_by_side(frame_bgr, mask, lines=None, alpha=0.45, with_scanlines=True):
+    """[overlay | mask*255] next to each other, with scanlines and info panel on overlay."""
+    over = overlay(frame_bgr, mask, alpha)
+    if with_scanlines:
+        draw_scanlines_and_deviation(over, mask, estimate_dev=False)
+    left = info_panel(over, lines)
     right = cv2.cvtColor(mask.astype(np.uint8) * 255, cv2.COLOR_GRAY2BGR)
     return np.hstack([left, right])

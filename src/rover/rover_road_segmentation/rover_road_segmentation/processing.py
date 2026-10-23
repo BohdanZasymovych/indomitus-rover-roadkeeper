@@ -67,43 +67,142 @@ def morph_kernel_size(height, ref=C.MORPH_KERNEL_REF):
     return k if k % 2 else k + 1
 
 
+def bridge_ruts(mask, kw_horiz=C.BRIDGE_KERNEL_WIDTH, kh_horiz=C.BRIDGE_KERNEL_HEIGHT,
+                kw_vert=C.VERTICAL_KERNEL_WIDTH, kh_vert=C.VERTICAL_KERNEL_HEIGHT,
+                start_y_fraction=C.SPAN_FILL_START_Y):
+    """Bridge center grass strip between left/right wheel ruts via directional closing."""
+    h, w = mask.shape
+    out = mask.copy()
+    y_start = int(start_y_fraction * h)
+
+    # 1. Horizontal bridging closing on lower portion of the image
+    if kw_horiz > 1 and kh_horiz > 1:
+        kw = max(3, int(round(kw_horiz * w / C.INFER_WIDTH)))
+        kh = max(1, int(round(kh_horiz * h / C.INFER_HEIGHT)))
+        k_horiz = cv2.getStructuringElement(cv2.MORPH_RECT, (kw, kh))
+        out[y_start:] = cv2.morphologyEx(out[y_start:], cv2.MORPH_CLOSE, k_horiz)
+
+    # 2. Vertical continuity closing across whole image
+    if kw_vert > 1 and kh_vert > 1:
+        kw_v = max(1, int(round(kw_vert * w / C.INFER_WIDTH)))
+        kh_v = max(3, int(round(kh_vert * h / C.INFER_HEIGHT)))
+        k_vert = cv2.getStructuringElement(cv2.MORPH_RECT, (kw_v, kh_v))
+        out = cv2.morphologyEx(out, cv2.MORPH_CLOSE, k_vert)
+
+    return out
+
+
+def fill_contour_holes_and_keep_largest(mask, lower_half_start=C.LOWER_HALF_START,
+                                        min_component_fraction=C.MIN_COMPONENT_FRACTION):
+    """Keep only primary road corridor and fill all interior holes (puddles, shadows)."""
+    h, w = mask.shape
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return np.zeros((h, w), dtype=np.uint8)
+
+    top = int(h * lower_half_start)
+    best_cnt = None
+    best_score = 0.0
+
+    # Pick the contour with largest area in the lower ROI
+    for cnt in contours:
+        cnt_mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.drawContours(cnt_mask, [cnt], -1, 1, thickness=cv2.FILLED)
+        score = float(cnt_mask[top:].sum())
+        if score > best_score:
+            best_score = score
+            best_cnt = cnt
+
+    min_area = min_component_fraction * (h - top) * w
+    if best_cnt is None or best_score < max(1.0, min_area):
+        return np.zeros((h, w), dtype=np.uint8)
+
+    # Draw the single best external contour filled -> every interior hole/shadow is 1
+    clean_mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.drawContours(clean_mask, [best_cnt], -1, 1, thickness=cv2.FILLED)
+    return clean_mask
+
+
+def stabilize_scanline_spans(mask, start_y_fraction=C.SPAN_FILL_START_Y,
+                             max_gap_fraction=C.MAX_SPAN_GAP_FRACTION):
+    """Row-wise span fill: fills gap between leftmost and rightmost road pixels in each row.
+
+    Guarantees every horizontal scanline used by rover_road_assist has strictly ONE
+    contiguous road run with full road half_width, eliminating inverted-V center notches.
+    """
+    h, w = mask.shape
+    out = mask.copy()
+    y_start = int(start_y_fraction * h)
+    max_gap = int(max_gap_fraction * w)
+
+    for y in range(y_start, h):
+        cols = np.flatnonzero(out[y])
+        if len(cols) >= 2:
+            left, right = cols[0], cols[-1]
+            gap = (right - left + 1) - len(cols)
+            if 0 < gap <= max_gap:
+                out[y, left:right + 1] = 1
+
+    return out
+
+
 def clean_mask(prob, threshold=C.ROAD_PROB_THRESHOLD, mask_hud=True,
                morph_kernel_ref=C.MORPH_KERNEL_REF, lower_half_start=C.LOWER_HALF_START,
-               min_component_fraction=C.MIN_COMPONENT_FRACTION):
-    """p(road) map (H, W) -> uint8 (H, W) mask with values strictly 0 and 1.
+               min_component_fraction=C.MIN_COMPONENT_FRACTION,
+               bridge_kernel_width=C.BRIDGE_KERNEL_WIDTH,
+               bridge_kernel_height=C.BRIDGE_KERNEL_HEIGHT,
+               vertical_kernel_height=C.VERTICAL_KERNEL_HEIGHT,
+               vertical_kernel_width=C.VERTICAL_KERNEL_WIDTH,
+               enable_convex_span_fill=C.ENABLE_CONVEX_SPAN_FILL,
+               max_span_gap_fraction=C.MAX_SPAN_GAP_FRACTION,
+               span_fill_start_y=C.SPAN_FILL_START_Y):
+    """p(road) map (H, W) -> regularized uint8 (H, W) mask strictly with values 0 and 1.
 
-    1. strict threshold (p > threshold, not argmax),
-    2. the HUD box is never road,
-    3. morphological open (drops speckle) then close (fills ruts/shadows),
-    4. only the connected component with the largest area in the lower part
-       of the frame is kept (the road the vehicle stands on); if even that is
-       smaller than min_component_fraction of the lower part, nothing is road.
+    1. strict threshold (p > threshold),
+    2. light morphological opening to drop isolated noise speckles,
+    3. horizontal rut bridging closing + vertical continuity closing,
+    4. keep primary road corridor & fill all interior holes (puddles/shadows) via RETR_EXTERNAL,
+    5. row-wise span stabilization to eliminate inverted-V bottom grass notches,
+    6. blank HUD box if mask_hud is True.
     """
     prob = np.asarray(prob)
     height, width = prob.shape
     mask = (prob > threshold).astype(np.uint8)
 
+    # Light opening to drop isolated noise speckles
+    if morph_kernel_ref > 0:
+        k = max(3, min(5, morph_kernel_size(height, morph_kernel_ref)))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+    # Horizontal rut bridging + vertical continuity closing
+    mask = bridge_ruts(
+        mask,
+        kw_horiz=bridge_kernel_width,
+        kh_horiz=bridge_kernel_height,
+        kw_vert=vertical_kernel_width,
+        kh_vert=vertical_kernel_height,
+        start_y_fraction=span_fill_start_y,
+    )
+
+    # Primary road contour selection + solid hole-filling
+    mask = fill_contour_holes_and_keep_largest(
+        mask,
+        lower_half_start=lower_half_start,
+        min_component_fraction=min_component_fraction,
+    )
+
+    # Scanline span stabilization
+    if enable_convex_span_fill and mask.any():
+        mask = stabilize_scanline_spans(
+            mask,
+            start_y_fraction=span_fill_start_y,
+            max_gap_fraction=max_span_gap_fraction,
+        )
+
+    # Zero out the HUD box
     if mask_hud:
         x0, y0, x1, y1 = hud_box(height, width)
         mask[y0:y1, x0:x1] = 0
 
-    if morph_kernel_ref > 0:
-        k = morph_kernel_size(height, morph_kernel_ref)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-        if mask_hud:  # closing may have grown back into the box
-            mask[y0:y1, x0:x1] = 0
-
-    n, labels = cv2.connectedComponents(mask, connectivity=8)
-    if n <= 1:
-        return np.zeros((height, width), np.uint8)
-
-    top = int(height * lower_half_start)
-    lower_area = np.bincount(labels[top:].ravel(), minlength=n)
-    lower_area[0] = 0
-    best = int(np.argmax(lower_area))
-    min_area = min_component_fraction * (height - top) * width
-    if lower_area[best] < max(1.0, min_area):
-        return np.zeros((height, width), np.uint8)
-    return (labels == best).astype(np.uint8)
+    return mask.astype(np.uint8)

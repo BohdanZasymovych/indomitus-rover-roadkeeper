@@ -21,14 +21,23 @@ from rover_road_segmentation.processing import clean_mask, preprocess
 @dataclass
 class PostProcessParams:
     threshold: float = C.ROAD_PROB_THRESHOLD
+    temporal_alpha: float = C.TEMPORAL_ALPHA
     mask_hud: bool = True
     morph_kernel_ref: int = C.MORPH_KERNEL_REF
     lower_half_start: float = C.LOWER_HALF_START
     min_component_fraction: float = C.MIN_COMPONENT_FRACTION
     min_frame_brightness: float = C.MIN_FRAME_BRIGHTNESS
+    bridge_kernel_width: int = C.BRIDGE_KERNEL_WIDTH
+    bridge_kernel_height: int = C.BRIDGE_KERNEL_HEIGHT
+    vertical_kernel_height: int = C.VERTICAL_KERNEL_HEIGHT
+    vertical_kernel_width: int = C.VERTICAL_KERNEL_WIDTH
+    enable_convex_span_fill: bool = C.ENABLE_CONVEX_SPAN_FILL
+    max_span_gap_fraction: float = C.MAX_SPAN_GAP_FRACTION
+    span_fill_start_y: float = C.SPAN_FILL_START_Y
 
     def clean_kwargs(self):
-        return {f.name: getattr(self, f.name) for f in fields(self) if f.name != 'min_frame_brightness'}
+        skip = {'min_frame_brightness', 'temporal_alpha'}
+        return {f.name: getattr(self, f.name) for f in fields(self) if f.name not in skip}
 
 
 def resolve_device(device='auto'):
@@ -54,28 +63,75 @@ class RoadSegmenter:
         self.model = model
         self.use_fp16 = bool(use_fp16) and self.device.type == 'cuda'
         self.post = post or PostProcessParams()
+        self._prev_prob = None
+        self._prev_shape = None
+
+    def reset(self):
+        """Resets temporal smoothing history (e.g. on seek, track switch, or outage)."""
+        self._prev_prob = None
+        self._prev_shape = None
 
     @torch.no_grad()
-    def predict_proba(self, frame, color_order='bgr'):
-        """p(road), float32 (H_orig, W_orig), or None for a frame with no video."""
-        h, w = frame.shape[:2]
+    def _predict_raw_infer_prob(self, frame, color_order='bgr'):
+        """Computes p(road) at fixed inference resolution (364, 714). Returns None if brightness < min."""
+        import cv2
         image, brightness = preprocess(frame, color_order)
         if brightness < self.post.min_frame_brightness:
+            self.reset()
             return None
         x = to_tensor(image).to(self.device, non_blocking=True)
         with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.use_fp16):
             logits = self.model(x)
-        # Upsample the logits straight to the original frame, then squash.
-        logits = F.interpolate(logits.float(), size=(h, w), mode='bilinear', align_corners=False)
-        return torch.sigmoid(logits)[0, 0].cpu().numpy()
+        return torch.sigmoid(logits.float())[0, 0].cpu().numpy()
+
+    def _smooth_prob(self, prob_infer, frame_shape):
+        """EMA temporal smoothing on the inference-resolution probability map."""
+        if self._prev_prob is None or self._prev_shape != frame_shape or self.post.temporal_alpha >= 1.0:
+            smoothed = prob_infer
+        else:
+            alpha = self.post.temporal_alpha
+            smoothed = alpha * prob_infer + (1.0 - alpha) * self._prev_prob
+        self._prev_prob = smoothed
+        self._prev_shape = frame_shape
+        return smoothed
+
+    @torch.no_grad()
+    def predict_proba(self, frame, color_order='bgr'):
+        """p(road), float32 (H_orig, W_orig), or None for a frame with no video."""
+        return self.segment_with_proba(frame, color_order)[1]
 
     def segment_with_proba(self, frame, color_order='bgr'):
-        """(mask uint8 0/1 (H, W), p(road) float32 (H, W) or None)."""
-        prob = self.predict_proba(frame, color_order)
-        if prob is None:
-            return np.zeros(frame.shape[:2], np.uint8), None
-        return clean_mask(prob, **self.post.clean_kwargs()), prob
+        """(mask uint8 0/1 (H_orig, W_orig), p(road) float32 (H_orig, W_orig) or None)."""
+        import cv2
+        from rover_road_segmentation.processing import hud_box
+        h_orig, w_orig = frame.shape[:2]
+        prob_infer = self._predict_raw_infer_prob(frame, color_order)
+        if prob_infer is None:
+            return np.zeros((h_orig, w_orig), np.uint8), None
+
+        # Step 1: Temporal smoothing at inference resolution
+        smoothed_infer = self._smooth_prob(prob_infer, (h_orig, w_orig))
+
+        # Steps 2 & 3: Rut bridging, hole filling, and scanline span stabilization
+        clean_args = self.post.clean_kwargs()
+        clean_args['mask_hud'] = False
+        mask_infer = clean_mask(smoothed_infer, **clean_args)
+
+        # Step 4: Upsample regularized mask back to original camera resolution
+        if (h_orig, w_orig) != mask_infer.shape:
+            mask_orig = cv2.resize(mask_infer, (w_orig, h_orig), interpolation=cv2.INTER_NEAREST)
+        else:
+            mask_orig = mask_infer
+
+        # Blank out bottom-left HUD box at original frame resolution
+        if self.post.mask_hud:
+            x0, y0, x1, y1 = hud_box(h_orig, w_orig)
+            mask_orig[y0:y1, x0:x1] = 0
+
+        # Full-resolution smoothed probability map for debug/evaluation
+        prob_full = cv2.resize(smoothed_infer, (w_orig, h_orig), interpolation=cv2.INTER_LINEAR)
+        return mask_orig.astype(np.uint8), prob_full
 
     def segment(self, frame, color_order='bgr'):
-        """Binary road mask of `frame`: uint8, shape frame.shape[:2], values 0 and 1."""
+        """Binary road mask of `frame`: uint8, shape frame.shape[:2], values strictly 0 and 1."""
         return self.segment_with_proba(frame, color_order)[0]
