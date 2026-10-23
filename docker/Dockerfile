@@ -129,7 +129,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-colcon-common-extensions python3-rosdep \
     iputils-ping pkg-config usbutils iproute2 g++ make cmake \
     can-utils \
-    vim && \
+    vim tmux && \
     rm -rf /var/lib/apt/lists/*
 
 RUN locale-gen en_US.UTF-8
@@ -157,6 +157,7 @@ RUN echo "if [ -f /opt/ros/\${TARGET_ROS_DISTRO}/setup.bash ]; then source /opt/
 
 COPY docker/entrypoint.bash /entrypoint.bash
 COPY docker/.bash_aliases /root/.bash_aliases
+COPY docker/tmux.conf /root/.tmux.conf
 RUN chmod +x /entrypoint.bash
 ENTRYPOINT ["/entrypoint.bash"]
 
