@@ -7,7 +7,7 @@
         <geometry>
           <plane>
             <normal>0 0 1</normal>
-            <size>100 100</size>
+            <size>15 15</size>
           </plane>
         </geometry>
       </collision>
@@ -16,7 +16,7 @@
         <geometry>
           <plane>
             <normal>0 0 1</normal>
-            <size>100 100</size>
+            <size>15 15</size>
           </plane>
         </geometry>
         <material>
@@ -25,7 +25,7 @@
           <specular>0.1 0.1 0.1 1</specular>
           <pbr>
             <metal>
-              <albedo_map>ground.png</albedo_map>
+              <albedo_map>road_texture.png</albedo_map>
               <roughness>0.6</roughness>
               <metalness>0</metalness>
             </metal>

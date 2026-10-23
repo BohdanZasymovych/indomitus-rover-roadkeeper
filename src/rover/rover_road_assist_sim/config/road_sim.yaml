@@ -14,7 +14,7 @@
     publish_rate: 15.0                      # [Hz] how often road/state is published, like a camera's frame rate
 
     # --- Road ---
-    road_width: 3.0                         # [m] width of the simulated road; also the assist's nominal_road_width unless set below
+    road_width: 2.0                         # [m] width of the simulated road; also the assist's nominal_road_width unless set below
     lookahead: 1.5                          # [m] measure the road this far ahead of the rover, as a forward camera would; 0 = under it
     max_visible_offset: 2.0                 # road further than this many half-widths from the rover is out of view: valid = false
     max_visible_heading: 1.047              # [rad] road turned further than this from the rover's heading is out of view (1.047 = 60 deg)

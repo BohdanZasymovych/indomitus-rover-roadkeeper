@@ -95,8 +95,8 @@ def generate_launch_description() -> LaunchDescription:
         arguments=[
             "-name", "indomitus_rover",
             "-topic", "robot_description",
-            "-x", "-3.0",
-            "-y", "31.67",
+            "-x", "0.0",
+            "-y", "0.0",
             "-z", "0.2",
             "-Y", "0.0",
         ],
