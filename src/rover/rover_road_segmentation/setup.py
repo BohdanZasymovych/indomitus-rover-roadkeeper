@@ -27,6 +27,8 @@ setup(
     entry_points={
         'console_scripts': [
             f'road_segmentation_node = {package_name}.segmentation_node:main',
+            f'video_publisher_node = {package_name}.video_publisher_node:main',
+            f'road_deviation_visualizer_node = {package_name}.road_deviation_visualizer_node:main',
         ],
     },
 )

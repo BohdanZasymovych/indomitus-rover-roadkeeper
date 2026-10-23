@@ -47,39 +47,49 @@ It provides a clean, modular perception pipeline that:
 
 ## Quickstart: Standalone Video Demo
 
-To test segmentation on raw dataset videos (`dev_0001.mp4` through `dev_0012.mp4`) without launching ROS:
+## End-to-End Pipeline Demo (Video -> DINOv2 -> rover_road_assist Offset -> Dashboard HUD)
+
+To validate the entire chain (reading video, DINOv2 road segmentation, `rover_road_assist` offset calculation, and HUD telemetry visualization):
 
 ```bash
-# 1. Activate the environment (PyTorch + CUDA)
+# 1. Activate the environment
 source src/rover/rover_roadkeeper/.venv/bin/activate
-# or run ./setup_env.sh in this package directory
 
-# 2. Run interactive demo on any dataset video
-python src/rover/rover_road_segmentation/test_segmentation_video.py \
-    --input /home/marko/def_tech_hackathon/track1/videos/dev_0001.mp4 \
-    --output src/rover/rover_road_segmentation/outputs/seg_dev_0001.mp4 \
+# 2. Run the end-to-end pipeline demo with live HUD visualization
+python src/rover/rover_road_segmentation/test_end_to_end_demo.py \
+    --input dev_0001.mp4 \
     --show
 
-# Keyboard controls during --show:
-#   [Space] : Pause / Resume
-#   [n]     : Next video / input
-#   [q/Esc] : Quit
-```
-
-### Batch Processing Multiple Videos
-```bash
-# Process all dev_*.mp4 videos with side-by-side visualization into outputs/
-python src/rover/rover_road_segmentation/test_segmentation_video.py \
-    --input /home/marko/def_tech_hackathon/track1/videos \
-    --stride 2 \
-    --layout side
+# 3. Save demonstration video to outputs/
+python src/rover/rover_road_segmentation/test_end_to_end_demo.py \
+    --input dev_0008.mp4 \
+    --output src/rover/rover_road_segmentation/outputs/demo_pipeline_dev_0008.mp4
 ```
 
 ---
 
-## Launching with ROS 2
+## Standalone Road Segmentation Tester
 
-### 1. Launch Segmentation + Downstream Road Deviation Node
+To test raw segmentation only on videos (`dev_0001.mp4` through `dev_0012.mp4`):
+
+```bash
+# Interactive GUI demo
+python src/rover/rover_road_segmentation/test_segmentation_video.py \
+    --input /home/marko/def_tech_hackathon/track1/videos/dev_0001.mp4 \
+    --show
+```
+
+---
+
+## Multi-Node ROS 2 Pipeline & Launch
+
+### 1. Launch Complete End-to-End ROS 2 Demo Pipeline
+Plays a video file into camera topic, segments road mask, calculates offset via `rover_road_assist`, and displays live HUD:
+```bash
+ros2 launch rover_road_segmentation demo_road_pipeline.launch.py video:=track-1/videos/dev_0001.mp4
+```
+
+### 2. Launch Segmentation + Downstream Road Deviation Node (Real Hardware Camera)
 ```bash
 ros2 launch rover_road_segmentation road_segmentation.launch.py
 ```
