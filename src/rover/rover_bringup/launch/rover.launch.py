@@ -40,7 +40,7 @@ def generate_launch_description():
     )
 
     use_cameras_arg = DeclareLaunchArgument(
-        'use_cameras', default_value='true',
+        'use_cameras', default_value='false',
         description='rover_cameras: MJPEG streams to the ground station + image_raw topics',
     )
 

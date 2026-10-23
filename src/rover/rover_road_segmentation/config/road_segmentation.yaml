@@ -1,0 +1,32 @@
+/**/road_segmentation_node:
+  ros__parameters:
+    # --- Topics (must match rover_road_assist) ---
+    image_topic: /rover/cameras/zed2i/image_raw                  # rover_cameras: <ns>/cameras/<name>/image_raw, rgb8, reliable depth 1
+    mask_topic: /rover/perception/road_mask                      # road_deviation_node's mask_topic default; mono8, 0 = no road, 1 = road
+
+    # --- Model ---
+    weights_path: ''          # '' = share/rover_road_segmentation/weights/road_segmenter_dinov2.pt
+    device: auto              # auto | cuda | cuda:0 | cpu
+    use_fp16: true            # autocast on CUDA only
+
+    # --- Post-processing (runtime-changeable with ros2 param set) ---
+    prob_threshold: 0.65          # road only if p(road) > this; higher = fewer false positives in the field
+    temporal_alpha: 0.60          # weight of current frame in EMA smoothing: p_hat = alpha*p + (1-alpha)*p_prev
+    mask_hud: true                # the bottom-left HUD box (95x35 px at 720x364, scaled) is never road
+    morph_kernel_ref: 7           # [px at 364 rows, scaled to the frame] light open filter; 0 = off
+    lower_half_start: 0.5         # keep only the largest connected component below this row fraction
+    min_component_fraction: 0.01  # ...if it covers at least this share of that lower part, else no road
+    min_frame_brightness: 8.0     # mean grey level below which the frame counts as "no video": empty mask
+
+    # --- Layer A: Rut Bridging & Span Fill ---
+    bridge_kernel_width: 35       # wide horizontal closing kernel [px at 714 width] to bridge wheel ruts
+    bridge_kernel_height: 9       # horizontal closing kernel height
+    vertical_kernel_height: 25    # vertical closing kernel height [px at 364 height] for travel continuity
+    vertical_kernel_width: 9      # vertical closing kernel width
+    enable_convex_span_fill: true # fill horizontal gap between ruts on lower scanlines
+    max_span_gap_fraction: 0.30   # max horizontal gap fraction across ruts to bridge (e.g. 30% of width)
+    span_fill_start_y: 0.45       # row fraction above which span fill is applied (lower half of frame)
+
+    # --- Debug ---
+    publish_debug_vis: false      # bgr8 overlay on ~/debug_overlay (only rendered while subscribed)
+    debug_overlay_alpha: 0.45

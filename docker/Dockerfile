@@ -141,6 +141,37 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 # which the ZED SDK likely needs; pinned exact for reproducible builds.
 RUN pip3 install --no-cache-dir --upgrade 'scipy==1.15.3'
 
+# PyTorch for rover_drone_detection and rover_road_segmentation.
+# Same torch on both images, from different wheels:
+#   arm64 (Jetson, JetPack 6 / L4T r36.4): Ultralytics' CUDA builds, PyPI's aarch64
+#     torch is CPU-only; torch 2.10 there links cuDSS, which JetPack lacks.
+#   amd64 (dev, CUDA 12.8 base): the cu128 wheels from download.pytorch.org.
+ARG TARGETARCH
+ARG TORCH_VERSION=2.10.0
+ARG TORCHVISION_VERSION=0.25.0
+ARG JETSON_WHEELS="https://github.com/ultralytics/assets/releases/download/v0.0.0"
+ARG CUDSS_VERSION=0.7.1
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        CUDSS_REPO="cudss-local-tegra-repo-ubuntu2204-${CUDSS_VERSION}" && \
+        wget -q "https://developer.download.nvidia.com/compute/cudss/${CUDSS_VERSION}/local_installers/${CUDSS_REPO}_${CUDSS_VERSION}-1_arm64.deb" -O /tmp/cudss.deb && \
+        dpkg -i /tmp/cudss.deb && \
+        cp /var/${CUDSS_REPO}/cudss-*-keyring.gpg /usr/share/keyrings/ && \
+        apt-get update && apt-get install -y --no-install-recommends cudss && \
+        apt-get purge -y ${CUDSS_REPO} && \
+        rm -rf /tmp/cudss.deb /var/${CUDSS_REPO} /var/lib/apt/lists/* && \
+        pip3 install --no-cache-dir \
+            "${JETSON_WHEELS}/torch-${TORCH_VERSION}-cp310-cp310-linux_aarch64.whl" \
+            "${JETSON_WHEELS}/torchvision-${TORCHVISION_VERSION}-cp310-cp310-linux_aarch64.whl"; \
+    else \
+        pip3 install --no-cache-dir --index-url https://download.pytorch.org/whl/cu128 \
+            "torch==${TORCH_VERSION}" "torchvision==${TORCHVISION_VERSION}"; \
+    fi
+
+# rover_road_segmentation loads its frozen DINOv2 backbone from the torch.hub
+# cache (model.py load_dinov2_backbone), so the rover works without internet.
+ENV TORCH_HOME=/opt/torch
+RUN python3 -c "import torch; torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14', pretrained=True)"
+
 RUN rosdep init || true && rosdep update
 
 COPY --from=hw-builder ${HW_WS}/install/ ${HW_WS}/install/
