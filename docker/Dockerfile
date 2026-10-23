@@ -174,6 +174,9 @@ COPY --from=cacher /extracted_xmls/ ${WS}/src/
 RUN apt-get update && \
     rosdep install --from-paths $(colcon list --packages-up-to ${DESKTOP_META} --paths-only) \
         --ignore-src --rosdistro ${TARGET_ROS_DISTRO} -r -y && \
+    apt-get install -y --no-install-recommends \
+        ros-${TARGET_ROS_DISTRO}-foxglove-bridge \
+        ros-${TARGET_ROS_DISTRO}-gz-ros2-control && \
     rm -rf /var/lib/apt/lists/*
 
 CMD ["bash"]
