@@ -34,7 +34,7 @@ The operator stays in control the whole time. Roadkeeper only assists manual
 driving and does not plan routes or drive on its own.
 
 > **Fork:** This repository is a fork of
-> [UCUSpaceRobotics/indomitus-rover-core](https://github.com/UCUSpaceRobotics/indomitus-rover-core),
+> [UCUSpaceRobotics/indomitus-rover-roadkeeper](https://github.com/UCUSpaceRobotics/indomitus-rover-roadkeeper),
 > the main Indomitus rover codebase. It keeps the rover's drive, sensors,
 > teleop and simulation from there. The robotic arm, the switch panel, Nav2
 > autonomous navigation, the LoRa/ground-station comms link and ArUco tracking
@@ -251,7 +251,7 @@ echo $ROS_DOMAIN_ID
 
 Before doing anything, you need to prepare your local environment:
 
-1. Navigate to the root of the **indomitus-rover-core** repository.
+1. Navigate to the root of the **indomitus-rover-roadkeeper** repository.
 
 2. Copy the example Docker Compose file:
 
@@ -270,10 +270,10 @@ Next, you need the Docker image. You can either pull a pre-built image or build 
 For example, pull the image from `develop`:
 
 ```bash
-docker pull ghcr.io/ucuspacerobotics/indomitus-rover-core:develop-dev
+docker pull ghcr.io/bohdanzasymovych/indomitus-rover-roadkeeper:develop-dev
 ```
 
-> **Pro Tip:** The images for the `develop` and `main` branches are built automatically, but you can also build an image for any branch. To do so, open the [GitHub Actions page](https://github.com/UCUSpaceRobotics/indomitus-rover-core/actions/workflows/publish_image.yaml). Press the gray button on the right, select the branch for which you want to build an image, and click **Run workflow**. When the image is built, you can pull it with the command `docker pull ghcr.io/ucuspacerobotics/indomitus-rover-core:<branch-name>-dev` (ensuring any slashes in your branch name are replaced with dashes, like `feature-shared-some-feature-dev`).
+> **Pro Tip:** The images for the `develop` and `main` branches are built automatically, but you can also build an image for any branch. To do so, open the [GitHub Actions page](https://github.com/UCUSpaceRobotics/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml). Press the gray button on the right, select the branch for which you want to build an image, and click **Run workflow**. When the image is built, you can pull it with the command `docker pull ghcr.io/bohdanzasymovych/indomitus-rover-roadkeeper:<branch-name>-dev` (ensuring any slashes in your branch name are replaced with dashes, like `feature-shared-some-feature-dev`).
 
 **Option B: Build the image locally**
 
@@ -301,7 +301,7 @@ docker compose build
 2. Enter the running container:
 
    ```bash
-   docker exec -it rover_dev /bin/bash
+   docker exec -it rover_roadkeeper /bin/bash
    ```
 
 3. Build the ROS 2 workspace:
@@ -352,7 +352,7 @@ To pull the latest image built by the CI pipeline on the `develop` branch, and t
 ./scripts/deploy_to_rover.sh pull
 ```
 
-The images for the `develop` and `main` branches are built automatically, but you can also use GitHub Actions to build an image for any other branch. To do so, open the [GitHub Actions page](https://github.com/UCUSpaceRobotics/indomitus-rover-core/actions/workflows/publish_image.yaml). Press the gray button on the right, select the branch for which you want to build an image, and click **Run workflow**. When the image is built, you can deploy it with the following command:
+The images for the `develop` and `main` branches are built automatically, but you can also use GitHub Actions to build an image for any other branch. To do so, open the [GitHub Actions page](https://github.com/UCUSpaceRobotics/indomitus-rover-roadkeeper/actions/workflows/publish_image.yaml). Press the gray button on the right, select the branch for which you want to build an image, and click **Run workflow**. When the image is built, you can deploy it with the following command:
 
 ```bash
 ./scripts/deploy_to_rover.sh pull --tag <branch-name>-prod

@@ -81,10 +81,16 @@ class LinkGuardNode(Node):
             f'link_guard_node: {cmd_vel_in} lost -> {cmd_vel_out}, retreat {retreat.value}')
 
     def _declare_params(self, cls):
-        """One read-only parameter per field of cls, defaulting to the field's."""
+        """One read-only parameter per field of cls, defaulting to the field's.
+
+        A field two classes share (max_yaw_rate) is declared once, by whichever
+        comes first, and both read that value: declaring it again would raise.
+        """
         read_only = ParameterDescriptor(read_only=True)
         return cls(**{
-            f.name: float(self.declare_parameter(f.name, f.default, read_only).value)
+            f.name: float(
+                self.get_parameter(f.name).value if self.has_parameter(f.name)
+                else self.declare_parameter(f.name, f.default, read_only).value)
             for f in fields(cls)
         })
 

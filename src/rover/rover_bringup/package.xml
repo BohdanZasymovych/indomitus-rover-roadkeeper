@@ -22,6 +22,7 @@
   <exec_depend>rover_description</exec_depend>
   <exec_depend>rover_peripherals</exec_depend>
   <exec_depend>rover_diagnostics</exec_depend>
+  <exec_depend>rover_cameras</exec_depend>
 
   <!-- CAN -->
   <exec_depend>ros2_socketcan</exec_depend>
@@ -30,6 +31,7 @@
   <exec_depend>rover_drive</exec_depend>
   <exec_depend>rover_road_assist</exec_depend>
   <exec_depend>rover_link_guard</exec_depend>
+  <exec_depend>rover_road_segmentation</exec_depend>
 
   <!-- URDF -->
   <exec_depend>xacro</exec_depend>

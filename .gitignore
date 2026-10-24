@@ -242,3 +242,6 @@ AMENT_IGNORE
 
 # AI context
 ai-context/
+
+# Personal scripts
+generate_road.py

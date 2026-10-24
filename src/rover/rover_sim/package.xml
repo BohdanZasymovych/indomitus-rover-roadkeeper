@@ -30,6 +30,8 @@
   <exec_depend>rover_drive</exec_depend>
   <exec_depend>rover_road_assist</exec_depend>
   <exec_depend>rover_link_guard</exec_depend>
+  <exec_depend>rover_viz</exec_depend>
+  <exec_depend>rover_road_segmentation</exec_depend>
   <exec_depend>rover_description</exec_depend>
   <exec_depend>rover_localization</exec_depend>
   
@@ -37,6 +39,7 @@
   <exec_depend>ros_gz_sim</exec_depend>
   <exec_depend>ros_gz_bridge</exec_depend>
   <exec_depend>gz_ros2_control</exec_depend>
+  <exec_depend>foxglove_bridge</exec_depend>
 
 
   <test_depend>ament_lint_auto</test_depend>

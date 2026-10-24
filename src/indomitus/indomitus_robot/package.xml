@@ -27,6 +27,7 @@
   <exec_depend>rover_sensors</exec_depend>
   <exec_depend>rover_teleop</exec_depend>
   <exec_depend>rover_road_assist</exec_depend>
+  <exec_depend>rover_road_segmentation</exec_depend>
 
 
   <!-- Recording ROS 2 bags in MCAP format -->

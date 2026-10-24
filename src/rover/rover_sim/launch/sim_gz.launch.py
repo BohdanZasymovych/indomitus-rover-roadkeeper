@@ -90,7 +90,7 @@ def check_git_lfs(rover_sim_share: str) -> None:
     lines.extend(f"    {path}" for path in unresolved_files)
     lines += [
         "",
-        "Fix it by running, from the root of your indomitus-rover-core clone:",
+        "Fix it by running, from the root of your indomitus-rover-roadkeeper clone:",
         "  sudo apt update && sudo apt install git-lfs   # or: brew install git-lfs (macOS)",
         "  git lfs install",
         "  git lfs pull",

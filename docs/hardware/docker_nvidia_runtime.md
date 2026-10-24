@@ -132,7 +132,7 @@ If `/var/run/docker.sock` is missing after `systemctl status docker` shows "acti
 ## Step 6 — Bring the container up
 
 ```bash
-docker rm -f rover_prod   # only if a stale container exists from a failed attempt
+docker rm -f rover_roadkeeper   # only if a stale container exists from a failed attempt
 docker compose up -d --wait
 ```
 

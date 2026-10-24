@@ -181,7 +181,7 @@ Jeston:
 ```bash
 cd ***
 docker compose up -d
-docker exec -it indomitus-rover-core bash
+docker exec -it indomitus-rover-roadkeeper bash
 ```
 subscribe to the topic to echo
 ```bash
@@ -192,7 +192,7 @@ Laptop:
 ```bash
 cd ***
 docker compose up -d
-docker exec -it indomitus-rover-core bash
+docker exec -it indomitus-rover-roadkeeper bash
 ```
 publish to the topic
 ```bash

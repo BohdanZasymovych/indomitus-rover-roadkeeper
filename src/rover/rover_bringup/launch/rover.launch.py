@@ -39,6 +39,11 @@ def generate_launch_description():
         description='Device path for the rover-side gamepad; only used when use_joy:=true',
     )
 
+    use_cameras_arg = DeclareLaunchArgument(
+        'use_cameras', default_value='false',
+        description='rover_cameras: MJPEG streams to the ground station + image_raw topics',
+    )
+
     zed2i_mode_arg = DeclareLaunchArgument(
         'zed2i_mode', default_value='',
         description=(
@@ -62,6 +67,7 @@ def generate_launch_description():
         interface_arg,
         use_joy_arg,
         joy_dev_arg,
+        use_cameras_arg,
         zed2i_mode_arg,
 
         GroupAction([
@@ -75,6 +81,12 @@ def generate_launch_description():
                     'joy_dev': LaunchConfiguration('joy_dev'),
                 }),
             ], condition=IfCondition(LaunchConfiguration('use_joy'))),
+
+            GroupAction([
+                include_launch('rover_cameras', 'cameras.launch.py', {
+                    'rover_namespace': '',   # already pushed by this group
+                }),
+            ], condition=IfCondition(LaunchConfiguration('use_cameras'))),
 
             include_launch('rover_bringup', 'can.launch.py', {
                 'interface': LaunchConfiguration('interface'),

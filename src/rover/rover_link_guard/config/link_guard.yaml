@@ -31,7 +31,7 @@
     turn_tolerance: 0.2               # [rad] the turn is done within this of the way back
 
     # --- Limits ---
-    max_yaw_rate: 0.5                 # [rad/s] hard cap on any yaw rate commanded
+    max_yaw_rate: 0.5                 # [rad/s] hard cap on any yaw rate commanded; also the steering law's cap (road_assist uses 0.55)
     max_accel: 0.5                    # [m/s^2] how fast speed may build up
     max_decel: 1.0                    # [m/s^2] how fast it may fall
     max_duration: 120.0               # [s] longest the whole episode may last before stopping for good
@@ -43,10 +43,10 @@
 
     # --- Steering while continuing (steering_law.SteeringParams); keep in step with road_assist.yaml ---
     nominal_road_width: 3.0
-    k_e: 1.0
+    k_e: 1.05
     v_0: 0.5
-    theta_max: 0.45
-    k_h: 2.25
-    offset_deadband: 0.07
+    theta_max: 0.5
+    k_h: 2.35
+    offset_deadband: 0.06
     heading_deadband: 0.05
     max_lateral_accel: 1.0

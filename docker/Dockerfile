@@ -129,7 +129,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-colcon-common-extensions python3-rosdep \
     iputils-ping pkg-config usbutils iproute2 g++ make cmake \
     can-utils \
-    vim && \
+    vim tmux && \
     rm -rf /var/lib/apt/lists/*
 
 RUN locale-gen en_US.UTF-8
@@ -140,6 +140,37 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 # Installing a numpy-2-compatible scipy via pip fixes this without touching numpy,
 # which the ZED SDK likely needs; pinned exact for reproducible builds.
 RUN pip3 install --no-cache-dir --upgrade 'scipy==1.15.3'
+
+# PyTorch for rover_drone_detection and rover_road_segmentation.
+# Same torch on both images, from different wheels:
+#   arm64 (Jetson, JetPack 6 / L4T r36.4): Ultralytics' CUDA builds, PyPI's aarch64
+#     torch is CPU-only; torch 2.10 there links cuDSS, which JetPack lacks.
+#   amd64 (dev, CUDA 12.8 base): the cu128 wheels from download.pytorch.org.
+ARG TARGETARCH
+ARG TORCH_VERSION=2.10.0
+ARG TORCHVISION_VERSION=0.25.0
+ARG JETSON_WHEELS="https://github.com/ultralytics/assets/releases/download/v0.0.0"
+ARG CUDSS_VERSION=0.7.1
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        CUDSS_REPO="cudss-local-tegra-repo-ubuntu2204-${CUDSS_VERSION}" && \
+        wget -q "https://developer.download.nvidia.com/compute/cudss/${CUDSS_VERSION}/local_installers/${CUDSS_REPO}_${CUDSS_VERSION}-1_arm64.deb" -O /tmp/cudss.deb && \
+        dpkg -i /tmp/cudss.deb && \
+        cp /var/${CUDSS_REPO}/cudss-*-keyring.gpg /usr/share/keyrings/ && \
+        apt-get update && apt-get install -y --no-install-recommends cudss && \
+        apt-get purge -y ${CUDSS_REPO} && \
+        rm -rf /tmp/cudss.deb /var/${CUDSS_REPO} /var/lib/apt/lists/* && \
+        pip3 install --no-cache-dir \
+            "${JETSON_WHEELS}/torch-${TORCH_VERSION}-cp310-cp310-linux_aarch64.whl" \
+            "${JETSON_WHEELS}/torchvision-${TORCHVISION_VERSION}-cp310-cp310-linux_aarch64.whl"; \
+    else \
+        pip3 install --no-cache-dir --index-url https://download.pytorch.org/whl/cu128 \
+            "torch==${TORCH_VERSION}" "torchvision==${TORCHVISION_VERSION}"; \
+    fi
+
+# rover_road_segmentation loads its frozen DINOv2 backbone from the torch.hub
+# cache (model.py load_dinov2_backbone), so the rover works without internet.
+ENV TORCH_HOME=/opt/torch
+RUN python3 -c "import torch; torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14', pretrained=True)"
 
 RUN rosdep init || true && rosdep update
 
@@ -157,6 +188,7 @@ RUN echo "if [ -f /opt/ros/\${TARGET_ROS_DISTRO}/setup.bash ]; then source /opt/
 
 COPY docker/entrypoint.bash /entrypoint.bash
 COPY docker/.bash_aliases /root/.bash_aliases
+COPY docker/tmux.conf /root/.tmux.conf
 RUN chmod +x /entrypoint.bash
 ENTRYPOINT ["/entrypoint.bash"]
 
@@ -173,6 +205,9 @@ COPY --from=cacher /extracted_xmls/ ${WS}/src/
 RUN apt-get update && \
     rosdep install --from-paths $(colcon list --packages-up-to ${DESKTOP_META} --paths-only) \
         --ignore-src --rosdistro ${TARGET_ROS_DISTRO} -r -y && \
+    apt-get install -y --no-install-recommends \
+        ros-${TARGET_ROS_DISTRO}-foxglove-bridge \
+        ros-${TARGET_ROS_DISTRO}-gz-ros2-control && \
     rm -rf /var/lib/apt/lists/*
 
 CMD ["bash"]
