@@ -14,6 +14,7 @@ from launch.actions import (
     TimerAction,
     RegisterEventHandler,
 )
+from launch.conditions import IfCondition
 from launch.event_handlers import OnShutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
@@ -361,6 +362,10 @@ def generate_launch_description() -> LaunchDescription:
             description="ROS namespace all rover nodes/topics are pushed under (arm excluded).",
         ),
         DeclareLaunchArgument(
+            "link_guard", default_value="true", choices=["true", "false"],
+            description="Start link_guard_node: drives the rover by itself while cmd_vel_remote_raw is silent",
+        ),
+        DeclareLaunchArgument(
             "road_assist_params_file", default_value="",
             description="Params file layered over rover_road_assist's road_assist.yaml.",
         ),
@@ -437,6 +442,12 @@ def generate_launch_description() -> LaunchDescription:
                 "use_sim_time": "true",
                 "extra_params_file": LaunchConfiguration("road_assist_params_file"),
             }),
+
+            # Drives on cmd_vel_ext while cmd_vel_remote_raw is silent.
+            include_launch("rover_link_guard", "link_guard.launch.py", {
+                "rover_namespace": "",
+                "use_sim_time": "true",
+            }, condition=IfCondition(LaunchConfiguration("link_guard"))),
         ]),
 
         # Trigger folder cleanup safely upon launch termination

@@ -6,7 +6,7 @@
 
     # --- Model ---
     weights_path: ''          # '' = share/rover_road_segmentation/weights/road_segmenter_dinov2.pt
-    device: cuda              # auto | cuda | cuda:0 | cpu
+    device: auto              # auto | cuda | cuda:0 | cpu
     use_fp16: true            # autocast on CUDA only
 
     # --- Post-processing (runtime-changeable with ros2 param set) ---

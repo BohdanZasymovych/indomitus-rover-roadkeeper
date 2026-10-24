@@ -30,6 +30,7 @@
   <!-- twist_mux, drive manager, drive source lamp -->
   <exec_depend>rover_drive</exec_depend>
   <exec_depend>rover_road_assist</exec_depend>
+  <exec_depend>rover_link_guard</exec_depend>
   <exec_depend>rover_road_segmentation</exec_depend>
 
   <!-- URDF -->

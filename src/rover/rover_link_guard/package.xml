@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rover_link_guard</name>
+  <version>0.0.0</version>
+  <description>
+    Keeps the rover safe when the operator's link drops: detects the loss, then continues along the road or retreats along the recorded path until the link returns.
+  </description>
+  <maintainer email="bohdan.zasymovych@gmail.com">bohdan</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>rcl_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>indomitus_interfaces</depend>
+  <depend>rover_road_assist</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
