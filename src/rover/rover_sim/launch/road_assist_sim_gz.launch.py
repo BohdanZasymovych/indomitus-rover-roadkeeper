@@ -113,6 +113,10 @@ def generate_launch_description() -> LaunchDescription:
             description="Open RViz2 with the rover model",
         ),
         DeclareLaunchArgument(
+            "link_guard", default_value="true", choices=["true", "false"],
+            description="Start link_guard_node: drives the rover by itself while cmd_vel_remote_raw is silent",
+        ),
+        DeclareLaunchArgument(
             "assist", default_value="",
             choices=["", "true", "false"],
             description="Start with the correction on or off; '' leaves it to road_assist.yaml",
@@ -174,7 +178,7 @@ def generate_launch_description() -> LaunchDescription:
             include_launch("rover_link_guard", "link_guard.launch.py", {
                 "rover_namespace": "",   # already pushed by this group
                 "use_sim_time": "true",
-            }),
+            }, condition=IfCondition(LaunchConfiguration("link_guard"))),
         ]),
         include_launch("rover_viz", "rviz.launch.py", {
             "use_sim": "true",

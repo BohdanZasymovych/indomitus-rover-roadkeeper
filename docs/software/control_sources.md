@@ -23,7 +23,7 @@
 
 ## Link loss
 
-`link_guard_node` (rover_link_guard, started by `rover.launch.py` and `sim_gz.launch.py`) treats
+`link_guard_node` (rover_link_guard, started by `rover.launch.py`, `sim_gz.launch.py` and `road_assist_sim_gz.launch.py`; `link_guard:=false` leaves it out) treats
 silence on `cmd_vel_remote_raw` as a lost link (the laptop teleop publishes at a steady rate, even
 with the sticks centred). While it lasts it is the only publisher on `cmd_vel_ext`; being the
 lowest priority, any operator source takes the rover back just by driving again.

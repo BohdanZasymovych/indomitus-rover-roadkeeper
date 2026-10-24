@@ -34,6 +34,11 @@ def generate_launch_description():
                     'through road_assist_node to cmd_vel_remote)',
     )
 
+    link_guard_arg = DeclareLaunchArgument(
+        'link_guard', default_value='true', choices=['true', 'false'],
+        description='Start link_guard_node: drives the rover by itself while cmd_vel_remote_raw is silent',
+    )
+
     joy_dev_arg = DeclareLaunchArgument(
         'joy_dev', default_value='/dev/input/js0',
         description='Device path for the rover-side gamepad; only used when use_joy:=true',
@@ -69,6 +74,7 @@ def generate_launch_description():
         joy_dev_arg,
         use_cameras_arg,
         zed2i_mode_arg,
+        link_guard_arg,
 
         GroupAction([
             PushRosNamespace(namespace_val),
@@ -126,7 +132,7 @@ def generate_launch_description():
             # silent; the operator takes over just by driving again.
             include_launch('rover_link_guard', 'link_guard.launch.py', {
                 'rover_namespace': '',   # already pushed by this group
-            }),
+            }, condition=IfCondition(LaunchConfiguration('link_guard'))),
 
             include_launch('rover_drive', 'drive_manager.launch.py'),
 
