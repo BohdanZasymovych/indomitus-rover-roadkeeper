@@ -32,7 +32,7 @@ from rover_road_assist.assist_state import RoadEstimate
 from rover_road_assist.steering_law import SteeringParams, road_error
 
 from rover_link_guard.fallback import Fallback, FallbackParams, Phase, Pose, RetreatMode
-from rover_link_guard.link_monitor import LinkMonitor, LinkParams, LinkState
+from rover_link_guard.link_monitor import LinkMonitor, LinkParams, LinkState, SpeedMemory
 
 # Latched, so a UI that starts later still sees the current status.
 STATUS_QOS = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
@@ -55,12 +55,13 @@ class LinkGuardNode(Node):
         self.declare_parameter('retreat', RetreatMode.REVERSE.value, read_only)
 
         self._steering = self._declare_params(SteeringParams)
-        self._monitor = LinkMonitor(self._declare_params(LinkParams))
+        link_params = self._declare_params(LinkParams)
+        self._monitor = LinkMonitor(link_params)
+        self._speed = SpeedMemory(link_params)
         retreat = RetreatMode(str(self.get_parameter('retreat').value))
         self._fallback = Fallback(
             self._steering, self._declare_params(FallbackParams), retreat)
         self._link = LinkState.OK
-        self._last_v = 0.0
         self._status = None
 
         cmd_vel_in = str(self.get_parameter('cmd_vel_in').value)
@@ -90,7 +91,7 @@ class LinkGuardNode(Node):
         return cls(**{
             f.name: float(
                 self.get_parameter(f.name).value if self.has_parameter(f.name)
-                else self.declare_parameter(f.name, f.default, read_only).value)
+                else self.declare_parameter(f.name, float(f.default), read_only).value)
             for f in fields(cls)
         })
 
@@ -99,7 +100,7 @@ class LinkGuardNode(Node):
 
     def _on_command(self, msg: Twist):
         self._monitor.on_command(self._now())
-        self._last_v = msg.linear.x
+        self._speed.on_command(self._now(), msg.linear.x)
 
     def _on_odom(self, msg: Odometry):
         p = msg.pose.pose
@@ -121,9 +122,9 @@ class LinkGuardNode(Node):
         if link is not self._link:
             self._link = link
             if link is LinkState.LOST:
-                self.get_logger().warn(
-                    f'link lost at {self._last_v:.2f} m/s, taking over')
-                self._fallback.start(now, self._last_v)
+                v = self._speed.at_drop()
+                self.get_logger().warn(f'link lost at {v:.2f} m/s, taking over')
+                self._fallback.start(now, v)
             else:
                 self.get_logger().info('link restored, handing back')
                 self._fallback.stop()

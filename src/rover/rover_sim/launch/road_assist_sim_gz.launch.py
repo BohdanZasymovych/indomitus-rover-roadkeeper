@@ -170,6 +170,11 @@ def generate_launch_description() -> LaunchDescription:
                 "use_sim_time": "true",
                 "controller_name": "swerve_controller_test",
             }),
+            # Drives on cmd_vel_ext while cmd_vel_remote_raw is silent.
+            include_launch("rover_link_guard", "link_guard.launch.py", {
+                "rover_namespace": "",   # already pushed by this group
+                "use_sim_time": "true",
+            }),
         ]),
         include_launch("rover_viz", "rviz.launch.py", {
             "use_sim": "true",

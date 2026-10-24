@@ -11,6 +11,7 @@
     lost_after: 1.0                   # [s] silence longer than this declares the link lost; keep above command_gap
     restore_after: 1.0                # [s] commands must keep arriving this long for the link to count as back
     command_gap: 0.5                  # [s] a pause longer than this breaks that run; keep equal to cmd_vel_remote's twist_mux timeout
+    speed_memory: 0.5                 # [s] a speed this recent before the last command is the speed at the drop; covers the zero twists a gamepad sends as it disconnects
 
     # --- Continue (fallback.FallbackParams) ---
     continue_speed: 0.5               # [m/s] speed while continuing along the road, capped by the speed the operator had

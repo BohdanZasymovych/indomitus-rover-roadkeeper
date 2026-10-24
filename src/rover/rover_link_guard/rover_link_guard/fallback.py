@@ -106,7 +106,7 @@ class FallbackParams:
     #: [m] Distance between recorded trail points.
     trail_spacing: float = 0.25
     #: Oldest points are forgotten past this many.
-    trail_max_points: float = 4000
+    trail_max_points: float = 4000.0
 
 
 class Pose(NamedTuple):

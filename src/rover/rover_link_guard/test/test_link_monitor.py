@@ -6,7 +6,7 @@ nobody has ever driven must not run one at all.
 No ROS import anywhere in here — link_monitor is deliberately standalone.
 """
 
-from rover_link_guard.link_monitor import LinkMonitor, LinkParams, LinkState
+from rover_link_guard.link_monitor import LinkMonitor, LinkParams, LinkState, SpeedMemory
 
 PARAMS = LinkParams()
 DT = 0.05   # a 20 Hz operator
@@ -79,3 +79,23 @@ def test_loss_after_a_restore_is_detected_again():
     t = feed(monitor, t + 3.0, 2.0)
     assert monitor.update(t) is LinkState.OK
     assert monitor.update(t + 3.0) is LinkState.LOST
+
+
+def test_zero_twists_right_after_driving_do_not_hide_the_speed():
+    speed = SpeedMemory(LinkParams())
+    speed.on_command(10.00, 0.8)
+    for t in (10.20, 10.25, 10.30):   # the zero burst a dropped gamepad sends
+        speed.on_command(t, 0.0)
+    assert speed.at_drop() == 0.8
+
+
+def test_a_stop_older_than_the_memory_is_a_real_stop():
+    speed = SpeedMemory(LinkParams())
+    speed.on_command(10.0, 0.8)
+    for i in range(40):
+        speed.on_command(10.5 + i * 0.05, 0.0)
+    assert speed.at_drop() == 0.0
+
+
+def test_no_commands_means_no_speed():
+    assert SpeedMemory(LinkParams()).at_drop() == 0.0

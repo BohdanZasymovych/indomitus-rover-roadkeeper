@@ -36,6 +36,10 @@ class LinkParams:
     #: [s] A pause between commands longer than this breaks the run that
     #: restore_after counts. Matches the cmd_vel_remote timeout in twist_mux.yaml.
     command_gap: float = 0.5
+    #: [s] A real speed this recent before the last command still counts as the
+    #: speed at the drop. The zero twists a laptop sends as its gamepad goes
+    #: quiet are not the operator stopping, and must not read as standing still.
+    speed_memory: float = 0.5
 
 
 class LinkMonitor:
@@ -62,3 +66,31 @@ class LinkMonitor:
             flowing = now - self._last <= self._p.command_gap
             self._lost = not (flowing and now - self._run_start >= self._p.restore_after)
         return LinkState.LOST if self._lost else LinkState.OK
+
+
+class SpeedMemory:
+    """The speed the operator was driving at when their commands ended.
+
+    The last command is not that speed: a gamepad that drops sends zero twists
+    on its way out (see JoyWatchdog), so by the time the silence is noticed the
+    newest command is always zero. This keeps the newest speed that was not,
+    and offers it when it is recent enough to be what the operator was doing.
+    """
+
+    def __init__(self, params: LinkParams):
+        self._memory = params.speed_memory
+        self._last = None          # (time, speed) of the newest command
+        self._moving = None        # (time, speed) of the newest non-zero one
+
+    def on_command(self, now: float, v: float):
+        self._last = (now, v)
+        if v != 0.0:
+            self._moving = (now, v)
+
+    def at_drop(self) -> float:
+        """Speed to continue from; 0 when nothing arrived or it was a real stop."""
+        if self._last is None:
+            return 0.0
+        if self._moving is not None and self._last[0] - self._moving[0] <= self._memory:
+            return self._moving[1]
+        return self._last[1]
